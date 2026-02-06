@@ -1,0 +1,14 @@
+{
+  "version": "1.0.0",
+  "build": 1,
+  "release_date": "2026-02-06",
+  "update_check_url": "https://raw.githubusercontent.com/DragonSCPOFICIAL/Arch-Linux/main/AetherLauncher/version.json",
+  "changelog": [
+    "Lançamento inicial do Aether Launcher para Linux",
+    "Baseado no motor de atualização e interface do DragonLauncher",
+    "Suporte nativo para Minecraft com gerenciamento de Java",
+    "Sistema de perfis e biblioteca integrado"
+  ],
+  "download_url": "https://raw.githubusercontent.com/DragonSCPOFICIAL/Arch-Linux/main/AetherLauncher/",
+  "min_version": "1.0.0"
+}
