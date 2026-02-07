@@ -118,6 +118,12 @@ sudo cp "$SCRIPT_DIR/brx_ai_app.sh" "$INSTALL_DIR/"
 sudo chmod +x "$INSTALL_DIR/brx_ai_app.sh"
 print_success "Script de inicialização copiado"
 
+# Copiar ícone
+if [ -f "$SCRIPT_DIR/icon.png" ]; then
+    sudo cp "$SCRIPT_DIR/icon.png" "$INSTALL_DIR/assets/"
+    print_success "Ícone copiado para assets"
+fi
+
 # Copiar README se existir
 if [ -f "$SCRIPT_DIR/README.md" ]; then
     sudo cp "$SCRIPT_DIR/README.md" "$INSTALL_DIR/"
