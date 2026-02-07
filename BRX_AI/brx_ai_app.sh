@@ -19,7 +19,7 @@ fi
 # LOGGING
 # ============================================================================
 {
-    echo "--- BRX AI App Iniciado em $(date) ---"
+    echo "BRX AI App Iniciado em $(date)"
     echo "Base Directory: $BASE_DIR"
 } >> "$LOG_FILE" 2>&1
 
@@ -51,6 +51,6 @@ python3 "$BASE_DIR/src/main.py"
 EXIT_CODE=$?
 
 # Registrar saída
-echo "--- BRX AI App Finalizado com código: $EXIT_CODE em $(date) ---" >> "$LOG_FILE"
+echo "BRX AI App Finalizado com código: $EXIT_CODE em $(date)" >> "$LOG_FILE"
 
 exit $EXIT_CODE

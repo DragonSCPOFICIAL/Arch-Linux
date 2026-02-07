@@ -35,7 +35,7 @@ class AetherUpdater:
             return None
 
     def update(self):
-        print("--- Iniciando Atualização do Aether Launcher ---")
+        print("Iniciando Atualização do Aether Launcher")
         remote_info = self.get_remote_version()
         if not remote_info:
             print("Falha ao conectar ao GitHub.")
@@ -62,7 +62,7 @@ class AetherUpdater:
                 print(f"Erro ao atualizar {file_path}: {e}")
                 return False
 
-        print(f"--- Atualizado para v{remote_info['version']} (Build {remote_info['build']}) ---")
+        print(f"Atualizado para v{remote_info["version"]} (Build {remote_info["build"]})")
         return True
 
 if __name__ == "__main__":

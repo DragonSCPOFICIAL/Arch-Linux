@@ -4,7 +4,7 @@
 # Gerencia a execução da inteligência artificial BRX
 
 LOG_FILE="$HOME/.brx_ai_app.log"
-echo "--- BRX_AI_App Iniciado em $(date) ---" > "$LOG_FILE"
+echo "BRX_AI_App Iniciado em $(date)" > "$LOG_FILE"
 exec 2>>"$LOG_FILE"
 
 BASE_DIR="/opt/brx_ai_app"

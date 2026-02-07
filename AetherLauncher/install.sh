@@ -8,7 +8,7 @@ INSTALL_DIR="/opt/$APP_NAME"
 BIN_DIR="/usr/bin"
 DESKTOP_DIR="$HOME/.local/share/applications"
 
-echo "--- Iniciando Instalação do Aether Launcher ---"
+echo "Iniciando Instalação do Aether Launcher"
 
 # 1. Criar diretórios
 sudo mkdir -p "$INSTALL_DIR"
@@ -40,5 +40,5 @@ Type=Application
 Categories=Game;
 EOF
 
-echo "--- Instalação Concluída! ---"
+echo "Instalação Concluída!"
 echo "Você pode abrir o launcher digitando '$APP_NAME' no terminal ou pelo menu de aplicativos."

@@ -10,7 +10,7 @@ DESKTOP_DIR="/usr/share/applications"
 CONFIG_DIR="$HOME/.config/aetherlauncher"
 LOG_FILE="$HOME/.aether_launcher.log"
 
-echo "--- Desinstalando Aether Launcher ---"
+echo "Desinstalando Aether Launcher"
 
 # 1. Remover link simbólico
 sudo rm -f "$BIN_DIR/$APP_NAME"
@@ -29,4 +29,4 @@ if [[ "$choice" == "s" || "$choice" == "S" ]]; then
     echo "Configurações removidas."
 fi
 
-echo "--- Desinstalação Concluída! ---"
+echo "Desinstalação Concluída!"

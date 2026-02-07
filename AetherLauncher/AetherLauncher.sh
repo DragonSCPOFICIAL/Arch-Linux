@@ -4,7 +4,7 @@
 # Gerencia a interface e a execução do Minecraft
 
 LOG_FILE="$HOME/.aether_launcher.log"
-echo "--- Aether Launcher Iniciado em $(date) ---" > "$LOG_FILE"
+echo "Aether Launcher Iniciado em $(date)" > "$LOG_FILE"
 exec 2>>"$LOG_FILE"
 
 BASE_DIR="/opt/aetherlauncher"
