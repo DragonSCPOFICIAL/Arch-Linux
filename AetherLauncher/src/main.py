@@ -91,7 +91,14 @@ class AetherLauncherUI:
         # Main Area
         # Carregar imagem de fundo
         try:
-            bg_image_path = os.path.join(self.base_dir, "background.png")
+            # Ajustar o caminho do background.png para o diretório de instalação
+            # self.base_dir é definido como ~/.aetherlauncher, mas o background.png é copiado para /opt/aetherlauncher
+            # AetherLauncher.sh define BASE_DIR como /opt/aetherlauncher ou o diretório do script
+            # Usaremos o diretório base do script para encontrar o background.png
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            # Subir um nível para chegar à pasta AetherLauncher
+            launcher_base_dir = os.path.abspath(os.path.join(script_dir, os.pardir, os.pardir))
+            bg_image_path = os.path.join(launcher_base_dir, "background.png")
             original_image = Image.open(bg_image_path)
             # Redimensionar a imagem para preencher a área principal
             # Obter as dimensões da janela principal (root)
