@@ -178,7 +178,7 @@ print_header "Criando Atalho no Menu"
 mkdir -p "$DESKTOP_DIR"
 
 # Criar arquivo .desktop
-sudo bash -c "cat > $DESKTOP_DIR/$APP_NAME.desktop <<EOF"
+cat <<EOF | sudo tee "$DESKTOP_DIR/$APP_NAME.desktop" > /dev/null
 [Desktop Entry]
 Version=1.0
 Type=Application
@@ -191,7 +191,6 @@ Categories=Utility;Development;AI;Automation;
 Keywords=AI;BRX;Automation;Vision;Agent;
 StartupNotify=true
 EOF
-"
 sudo chmod +x "$DESKTOP_DIR/$APP_NAME.desktop"
 print_success "Atalho criado: $DESKTOP_DIR/$APP_NAME.desktop"
 
