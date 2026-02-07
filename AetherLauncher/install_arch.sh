@@ -5,8 +5,8 @@
 
 APP_NAME="aetherlauncher"
 INSTALL_DIR="/opt/$APP_NAME"
-BIN_DIR="/usr/bin"
-DESKTOP_DIR="$HOME/.local/share/applications"
+BIN_DIR="/usr/local/bin"
+DESKTOP_DIR="/usr/share/applications"
 
 echo "Iniciando Instalação do Aether Launcher para Arch Linux"
 
@@ -36,8 +36,8 @@ sudo chmod +x "$INSTALL_DIR/uninstall.sh"
 
 # 6. Criar atalho no menu
 echo "Criando atalho no menu..."
-mkdir -p "$DESKTOP_DIR"
-cat <<EOF > "$DESKTOP_DIR/$APP_NAME.desktop"
+sudo mkdir -p "$DESKTOP_DIR"
+sudo bash -c "cat <<EOF > $DESKTOP_DIR/$APP_NAME.desktop"
 [Desktop Entry]
 Name=Aether Launcher
 Comment=Minecraft Launcher Elite para Arch Linux
@@ -47,8 +47,8 @@ Terminal=false
 Type=Application
 Categories=Game;
 EOF
-
-chmod +x "$DESKTOP_DIR/$APP_NAME.desktop"
+"
+sudo chmod +x "$DESKTOP_DIR/$APP_NAME.desktop"
 
 echo "Instalação Concluída!"
 echo "Você pode abrir o launcher digitando '$APP_NAME' no terminal ou pelo menu de aplicativos."

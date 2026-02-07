@@ -1,20 +1,19 @@
 # 🐉 Arch Linux Projects - DragonSCPOFICIAL
 
-Este repositório contém ferramentas nativas para **Arch Linux**. Abaixo você encontra os comandos para instalar e desinstalar cada projeto automaticamente pelo terminal usando privilégios de superusuário (**sudo**).
+Este repositório contém ferramentas nativas para **Arch Linux**. Os comandos abaixo instalam os projetos como **programas reais** no seu sistema, criando atalhos no menu de aplicativos e comandos globais no terminal.
 
 ---
 
 ## 🤖 1. BRX AI (Agente Autônomo)
-O **BRX AI** é um agente de inteligência artificial com interface nativa inspirada no Manus.
+O **BRX AI** é um agente de inteligência artificial com interface nativa moderna.
 
-### 🚀 Instalação Automática (Com Sudo)
-Este comando garante que você tenha a versão mais recente e permissões necessárias para instalar no sistema:
+### 🚀 Instalação como Programa Nativo
+Este comando instala o BRX AI em `/opt`, cria o comando `brx_ai_app` e adiciona o atalho ao seu menu:
 ```bash
-sudo bash -c 'if [ -d "Arch-Linux" ]; then cd Arch-Linux && git fetch --all && git reset --hard origin/main; else git clone https://github.com/DragonSCPOFICIAL/Arch-Linux.git && cd Arch-Linux; fi && cd BRX_AI && bash install.sh'
+if [ -d "Arch-Linux" ]; then cd Arch-Linux && git fetch --all && git reset --hard origin/main; else git clone https://github.com/DragonSCPOFICIAL/Arch-Linux.git && cd Arch-Linux; fi && cd BRX_AI && sudo bash install.sh
 ```
 
-### 🗑️ Desinstalação Automática (Com Sudo)
-Para remover completamente o BRX AI do sistema:
+### 🗑️ Desinstalação Completa
 ```bash
 sudo bash /opt/brx_ai_app/uninstall.sh
 ```
@@ -24,29 +23,28 @@ sudo bash /opt/brx_ai_app/uninstall.sh
 ## 🎮 2. Aether Launcher (Minecraft Elite)
 O **Aether Launcher** é um inicializador de Minecraft otimizado para Arch Linux.
 
-### 🚀 Instalação Automática (Com Sudo)
-Este comando garante que você tenha a versão mais recente e permissões necessárias para instalar no sistema:
+### 🚀 Instalação como Programa Nativo
+Este comando instala o Aether Launcher em `/opt`, cria o comando `aetherlauncher` e adiciona o atalho ao seu menu:
 ```bash
-sudo bash -c 'if [ -d "Arch-Linux" ]; then cd Arch-Linux && git fetch --all && git reset --hard origin/main; else git clone https://github.com/DragonSCPOFICIAL/Arch-Linux.git && cd Arch-Linux; fi && cd AetherLauncher && bash install_arch.sh'
+if [ -d "Arch-Linux" ]; then cd Arch-Linux && git fetch --all && git reset --hard origin/main; else git clone https://github.com/DragonSCPOFICIAL/Arch-Linux.git && cd Arch-Linux; fi && cd AetherLauncher && sudo bash install_arch.sh
 ```
 
-### 🗑️ Desinstalação Automática (Com Sudo)
-Para remover completamente o Aether Launcher do sistema:
+### 🗑️ Desinstalação Completa
 ```bash
 sudo bash /opt/aetherlauncher/uninstall.sh
 ```
 
 ---
 
-## 📂 Estrutura do Repositório
-| Pasta | Projeto | Descrição |
-| :--- | :--- | :--- |
-| `/BRX_AI` | **BRX AI** | Agente de IA com visão de sistema e automação. |
-| `/AetherLauncher` | **Aether Launcher** | Launcher de Minecraft nativo para Arch Linux. |
+## 📂 O que muda após a instalação?
+Após rodar os comandos acima, os projetos deixam de ser apenas scripts e passam a ser **programas do sistema**:
+1.  **Menu de Aplicativos**: Você encontrará "BRX AI Agent" e "Aether Launcher" no seu menu (GNOME, KDE, XFCE, etc.).
+2.  **Terminal Global**: Você pode abrir os programas de qualquer lugar apenas digitando `brx_ai_app` ou `aetherlauncher`.
+3.  **Localização Padrão**: Os arquivos ficam organizados em `/opt/`, seguindo o padrão Linux.
 
 ---
 
-## 🛠️ Requisitos Gerais
+## 🛠️ Requisitos do Sistema
 *   **Python 3.8+**
 *   **Tkinter** (`sudo pacman -S tk`)
 *   **Git** (`sudo pacman -S git`)

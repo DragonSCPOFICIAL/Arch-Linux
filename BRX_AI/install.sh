@@ -11,7 +11,7 @@ APP_NAME="brx_ai_app"
 APP_DISPLAY_NAME="BRX AI Agent"
 INSTALL_DIR="/opt/$APP_NAME"
 BIN_DIR="/usr/local/bin"
-DESKTOP_DIR="$HOME/.local/share/applications"
+DESKTOP_DIR="/usr/share/applications"
 ICON_DIR="$HOME/.local/share/icons/hicolor/256x256/apps"
 
 # Cores para output
@@ -178,7 +178,7 @@ print_header "Criando Atalho no Menu"
 mkdir -p "$DESKTOP_DIR"
 
 # Criar arquivo .desktop
-cat > "$DESKTOP_DIR/$APP_NAME.desktop" <<EOF
+sudo bash -c "cat > $DESKTOP_DIR/$APP_NAME.desktop <<EOF"
 [Desktop Entry]
 Version=1.0
 Type=Application
@@ -191,8 +191,8 @@ Categories=Utility;Development;AI;Automation;
 Keywords=AI;BRX;Automation;Vision;Agent;
 StartupNotify=true
 EOF
-
-chmod +x "$DESKTOP_DIR/$APP_NAME.desktop"
+"
+sudo chmod +x "$DESKTOP_DIR/$APP_NAME.desktop"
 print_success "Atalho criado: $DESKTOP_DIR/$APP_NAME.desktop"
 
 # ============================================================================
