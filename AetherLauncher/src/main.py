@@ -79,10 +79,10 @@ class AetherLauncherUI:
                  bg=self.colors["sidebar"], fg=self.colors["text_dim"]).pack()
         
         # Botões de Navegação
-        self.create_nav_btn("🎮  JOGAR", self.show_play_page)
-        self.create_nav_btn("📦  VERSÕES", self.show_versions_page)
-        self.create_nav_btn("⚙️  AJUSTES", self.show_settings_page)
-        self.create_nav_btn("👤  PERFIS", self.show_profiles_page)
+        self.create_nav_btn("JOGAR", self.show_play_page)
+        self.create_nav_btn("VERSÕES", self.show_versions_page)
+        self.create_nav_btn("AJUSTES", self.show_settings_page)
+        self.create_nav_btn("PERFIS", self.show_profiles_page)
         
         # Footer Sidebar
         self.version_lbl = tk.Label(self.sidebar, text="v2.0.0", bg=self.colors["sidebar"], fg=self.colors["text_dim"])
@@ -221,7 +221,7 @@ class AetherLauncherUI:
         tk.Label(container, text="PERFIS", font=("Segoe UI", 24, "bold"), 
                  bg="", fg=self.colors["text"]).pack(anchor="w", pady=(0, 30))
         
-        tk.Label(container, text="🎮 Sistema de perfis será implementado em breve!", 
+        tk.Label(container, text="Sistema de perfis será implementado em breve!", 
                 font=("Segoe UI", 14), bg="", fg=self.colors["text_dim"]).pack(pady=50)
 
     def create_version_card(self, parent, version):
