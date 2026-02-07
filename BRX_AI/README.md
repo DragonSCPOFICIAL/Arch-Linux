@@ -34,8 +34,8 @@ sudo bash install.sh
 
 1. **Clone ou baixe o repositório**:
 ```bash
-git clone https://github.com/seu-usuario/brx_ai_improved.git
-cd brx_ai_improved
+git clone https://github.com/DragonSCPOFICIAL/Arch-Linux.git
+cd Arch-Linux/BRX_AI
 ```
 
 2. **Execute o instalador**:
