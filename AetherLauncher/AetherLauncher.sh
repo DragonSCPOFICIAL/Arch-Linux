@@ -19,4 +19,7 @@ if [ ! -f "$BASE_DIR/src/main.py" ]; then
 fi
 
 # Iniciar a Interface
-python3 "$BASE_DIR/src/main.py"
+python3 "$BASE_DIR/src/main.py" 2>>"$LOG_FILE"
+if [ $? -ne 0 ]; then
+    echo "A interface fechou com erro. Verifique $LOG_FILE para detalhes."
+fi

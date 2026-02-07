@@ -97,7 +97,7 @@ class AetherLauncherUI:
             # Usaremos o diretório base do script para encontrar o background.png
             script_dir = os.path.dirname(os.path.abspath(__file__))
             # Subir um nível para chegar à pasta AetherLauncher
-            launcher_base_dir = os.path.abspath(os.path.join(script_dir, os.pardir, os.pardir))
+            launcher_base_dir = os.path.abspath(os.path.join(script_dir, os.pardir))
             bg_image_path = os.path.join(launcher_base_dir, "background.png")
             original_image = Image.open(bg_image_path)
             # Redimensionar a imagem para preencher a área principal
