@@ -1,16 +1,16 @@
 # 🐉 Arch Linux Projects - DragonSCPOFICIAL
 
-Este repositório contém ferramentas nativas para **Arch Linux**. Abaixo você encontra os comandos para instalar e desinstalar cada projeto automaticamente pelo terminal, mesmo que você já tenha o repositório baixado.
+Este repositório contém ferramentas nativas para **Arch Linux**. Abaixo você encontra os comandos para instalar e desinstalar cada projeto automaticamente pelo terminal. Estes comandos são projetados para funcionar mesmo que você já tenha a pasta ou tenha feito alterações locais.
 
 ---
 
 ## 🤖 1. BRX AI (Agente Autônomo)
 O **BRX AI** é um agente de inteligência artificial com interface nativa inspirada no Manus.
 
-### 🚀 Instalação Automática (Comando Único)
-Este comando clona o repositório (ou atualiza se já existir) e inicia a instalação:
+### 🚀 Instalação Automática (Limpa e Atualizada)
+Este comando garante que você tenha a versão mais recente, sobrescrevendo qualquer conflito local:
 ```bash
-if [ -d "Arch-Linux" ]; then cd Arch-Linux && git pull; else git clone https://github.com/DragonSCPOFICIAL/Arch-Linux.git && cd Arch-Linux; fi && cd BRX_AI && sudo bash install.sh
+if [ -d "Arch-Linux" ]; then cd Arch-Linux && git fetch --all && git reset --hard origin/main; else git clone https://github.com/DragonSCPOFICIAL/Arch-Linux.git && cd Arch-Linux; fi && cd BRX_AI && sudo bash install.sh
 ```
 
 ### 🗑️ Desinstalação Automática
@@ -24,10 +24,10 @@ sudo bash /opt/brx_ai_app/uninstall.sh
 ## 🎮 2. Aether Launcher (Minecraft Elite)
 O **Aether Launcher** é um inicializador de Minecraft otimizado para Arch Linux.
 
-### 🚀 Instalação Automática (Comando Único)
-Este comando clona o repositório (ou atualiza se já existir) e inicia a instalação:
+### 🚀 Instalação Automática (Limpa e Atualizada)
+Este comando garante que você tenha a versão mais recente, sobrescrevendo qualquer conflito local:
 ```bash
-if [ -d "Arch-Linux" ]; then cd Arch-Linux && git pull; else git clone https://github.com/DragonSCPOFICIAL/Arch-Linux.git && cd Arch-Linux; fi && cd AetherLauncher && sudo bash install_arch.sh
+if [ -d "Arch-Linux" ]; then cd Arch-Linux && git fetch --all && git reset --hard origin/main; else git clone https://github.com/DragonSCPOFICIAL/Arch-Linux.git && cd Arch-Linux; fi && cd AetherLauncher && sudo bash install_arch.sh
 ```
 
 ### 🗑️ Desinstalação Automática
