@@ -38,7 +38,7 @@ sudo chmod +x "$INSTALL_DIR/updater.py"
 sudo chmod +x "$INSTALL_DIR/uninstall.sh"
 
 # 5. Criar atalho no menu
-cat <<EOF | sudo tee "$DESKTOP_DIR/$APP_NAME.desktop"
+cat <<EOF | sudo tee "$DESKTOP_DIR/$APP_NAME.desktop" > /dev/null
 [Desktop Entry]
 Name=Aether Launcher
 Comment=Minecraft Launcher Elite para Linux

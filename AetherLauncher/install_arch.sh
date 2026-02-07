@@ -37,7 +37,7 @@ sudo chmod +x "$INSTALL_DIR/uninstall.sh"
 # 6. Criar atalho no menu
 echo "Criando atalho no menu..."
 sudo mkdir -p "$DESKTOP_DIR"
-sudo bash -c "cat <<EOF > $DESKTOP_DIR/$APP_NAME.desktop"
+cat <<EOF | sudo tee "$DESKTOP_DIR/$APP_NAME.desktop" > /dev/null
 [Desktop Entry]
 Name=Aether Launcher
 Comment=Minecraft Launcher Elite para Arch Linux
@@ -47,7 +47,6 @@ Terminal=false
 Type=Application
 Categories=Game;
 EOF
-"
 sudo chmod +x "$DESKTOP_DIR/$APP_NAME.desktop"
 
 echo "Instalação Concluída!"
