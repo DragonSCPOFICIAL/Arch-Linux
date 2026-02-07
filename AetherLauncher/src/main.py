@@ -89,8 +89,34 @@ class AetherLauncherUI:
         self.version_lbl.pack(side="bottom", pady=10)
         
         # Main Area
-        self.main_area = tk.Frame(self.root, bg=self.colors["bg"])
-        self.main_area.pack(side="right", fill="both", expand=True)
+        # Carregar imagem de fundo
+        try:
+            bg_image_path = os.path.join(self.base_dir, "background.png")
+            original_image = Image.open(bg_image_path)
+            # Redimensionar a imagem para preencher a área principal
+            # Obter as dimensões da janela principal (root)
+            self.root.update_idletasks() # Atualiza para obter as dimensões corretas
+            main_area_width = self.root.winfo_width() - self.sidebar.winfo_width()
+            main_area_height = self.root.winfo_height()
+
+            resized_image = original_image.resize((main_area_width, main_area_height), Image.LANCZOS)
+            self.bg_photo = ImageTk.PhotoImage(resized_image)
+
+            self.background_label = tk.Label(self.root, image=self.bg_photo)
+            self.background_label.place(x=self.sidebar.winfo_width(), y=0, relwidth=1, relheight=1)
+            self.background_label.image = self.bg_photo # Manter referência
+
+            self.main_area = tk.Frame(self.root, bg="") # Fundo transparente para o frame
+            self.main_area.place(x=self.sidebar.winfo_width(), y=0, relwidth=1, relheight=1)
+
+        except FileNotFoundError:
+            print("Arquivo de background.png não encontrado. Usando cor de fundo padrão.")
+            self.main_area = tk.Frame(self.root, bg=self.colors["bg"])
+            self.main_area.pack(side="right", fill="both", expand=True)
+        except Exception as e:
+            print(f"Erro ao carregar imagem de fundo: {e}")
+            self.main_area = tk.Frame(self.root, bg=self.colors["bg"])
+            self.main_area.pack(side="right", fill="both", expand=True)
         
         # Mostrar página inicial
         self.show_play_page()
@@ -98,11 +124,11 @@ class AetherLauncherUI:
     def show_play_page(self):
         self.clear_main_area()
         
-        container = tk.Frame(self.main_area, bg=self.colors["bg"], padx=40, pady=40)
+        container = tk.Frame(self.main_area, bg="", padx=40, pady=40)
         container.pack(fill="both", expand=True)
         
         tk.Label(container, text="BEM-VINDO AO AETHER LINUX", font=("Segoe UI", 24, "bold"), 
-                 bg=self.colors["bg"], fg=self.colors["text"]).pack(anchor="w")
+                 bg="", fg=self.colors["text"]).pack(anchor="w")
         
         # Card de Jogo
         self.play_card = tk.Frame(container, bg=self.colors["card"], padx=30, pady=30)
@@ -135,8 +161,8 @@ class AetherLauncherUI:
         self.version_status.pack(anchor="w")
         
         # Barra de progresso
-        self.progress_frame = tk.Frame(container, bg=self.colors["bg"])
-        self.progress_label = tk.Label(self.progress_frame, text="", bg=self.colors["bg"], 
+        self.progress_frame = tk.Frame(container, bg="")
+        self.progress_label = tk.Label(self.progress_frame, text="", bg="", 
                                        fg=self.colors["text"], font=("Segoe UI", 10))
         self.progress_label.pack(anchor="w", pady=(0, 5))
         
@@ -153,11 +179,11 @@ class AetherLauncherUI:
     def show_versions_page(self):
         self.clear_main_area()
         
-        container = tk.Frame(self.main_area, bg=self.colors["bg"], padx=40, pady=40)
+        container = tk.Frame(self.main_area, bg="", padx=40, pady=40)
         container.pack(fill="both", expand=True)
         
         tk.Label(container, text="GERENCIADOR DE VERSÕES", font=("Segoe UI", 24, "bold"), 
-                 bg=self.colors["bg"], fg=self.colors["text"]).pack(anchor="w", pady=(0, 30))
+                 bg="", fg=self.colors["text"]).pack(anchor="w", pady=(0, 30))
         
         for version, url in self.available_versions.items():
             self.create_version_card(container, version)
@@ -165,11 +191,11 @@ class AetherLauncherUI:
     def show_settings_page(self):
         self.clear_main_area()
         
-        container = tk.Frame(self.main_area, bg=self.colors["bg"], padx=40, pady=40)
+        container = tk.Frame(self.main_area, bg="", padx=40, pady=40)
         container.pack(fill="both", expand=True)
         
         tk.Label(container, text="CONFIGURAÇÕES", font=("Segoe UI", 24, "bold"), 
-                 bg=self.colors["bg"], fg=self.colors["text"]).pack(anchor="w", pady=(0, 30))
+                 bg="", fg=self.colors["text"]).pack(anchor="w", pady=(0, 30))
         
         settings_card = tk.Frame(container, bg=self.colors["card"], padx=30, pady=30)
         settings_card.pack(fill="x", pady=10)
@@ -189,14 +215,14 @@ class AetherLauncherUI:
     def show_profiles_page(self):
         self.clear_main_area()
         
-        container = tk.Frame(self.main_area, bg=self.colors["bg"], padx=40, pady=40)
+        container = tk.Frame(self.main_area, bg="", padx=40, pady=40)
         container.pack(fill="both", expand=True)
         
         tk.Label(container, text="PERFIS", font=("Segoe UI", 24, "bold"), 
-                 bg=self.colors["bg"], fg=self.colors["text"]).pack(anchor="w", pady=(0, 30))
+                 bg="", fg=self.colors["text"]).pack(anchor="w", pady=(0, 30))
         
         tk.Label(container, text="🎮 Sistema de perfis será implementado em breve!", 
-                font=("Segoe UI", 14), bg=self.colors["bg"], fg=self.colors["text_dim"]).pack(pady=50)
+                font=("Segoe UI", 14), bg="", fg=self.colors["text_dim"]).pack(pady=50)
 
     def create_version_card(self, parent, version):
         card = tk.Frame(parent, bg=self.colors["card"], padx=20, pady=15)
