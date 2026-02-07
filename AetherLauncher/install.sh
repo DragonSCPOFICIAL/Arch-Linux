@@ -6,7 +6,7 @@
 APP_NAME="aetherlauncher"
 INSTALL_DIR="/opt/$APP_NAME"
 BIN_DIR="/usr/bin"
-DESKTOP_DIR="/usr/share/applications"
+DESKTOP_DIR="$HOME/.local/share/applications"
 
 echo "--- Iniciando Instalação do Aether Launcher ---"
 
@@ -19,8 +19,8 @@ sudo cp -r ./* "$INSTALL_DIR/"
 
 # 3. Instalar dependências Python
 echo "Instalando dependências..."
-sudo pacman -S --noconfirm python-pillow python-requests python-pip
-sudo pip install minecraft-launcher-lib --break-system-packages
+sudo apt update && sudo apt install -y python3-pil python3-requests python3-pip
+sudo pip3 install minecraft-launcher-lib --break-system-packages
 
 # 4. Criar link simbólico
 sudo ln -sf "$INSTALL_DIR/AetherLauncher.sh" "$BIN_DIR/$APP_NAME"
