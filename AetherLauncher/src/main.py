@@ -7,9 +7,6 @@ import subprocess
 import ssl
 import urllib.request
 import shutil
-import zipfile
-import hashlib
-from pathlib import Path
 from PIL import Image, ImageTk
 
 class AetherLauncherUI:
@@ -94,14 +91,16 @@ class AetherLauncherUI:
         self.main_area = tk.Frame(self.root, bg=self.colors["bg"])
         self.main_area.pack(side="right", fill="both", expand=True)
         
+        # Background Label (no fundo da main_area)
+        self.background_label = tk.Label(self.main_area, bg=self.colors["bg"], bd=0)
+        self.background_label.place(x=0, y=0, relwidth=1, relheight=1)
+        
         # Container para o conteúdo (acima do background)
         self.content_container = tk.Frame(self.main_area, bg="")
         self.content_container.place(x=0, y=0, relwidth=1, relheight=1)
         
-        # Inicializar background
-        self.background_label = tk.Label(self.main_area, bg=self.colors["bg"], bd=0)
-        self.background_label.place(x=0, y=0, relwidth=1, relheight=1)
-        self.background_label.lower()
+        # Garantir que o conteúdo fique acima do background
+        self.content_container.lift()
         
         # Forçar carregamento do background e da primeira página
         self.root.after(100, self.load_background)
@@ -118,11 +117,12 @@ class AetherLauncherUI:
 
             original_image = Image.open(bg_image_path)
             
-            # Obter dimensões
-            width = self.root.winfo_width() - 220 # Largura da sidebar fixa
-            height = self.root.winfo_height()
+            # Obter dimensões reais
+            self.root.update_idletasks()
+            width = self.main_area.winfo_width()
+            height = self.main_area.winfo_height()
             
-            if width <= 100 or height <= 100:
+            if width <= 10 or height <= 10:
                 self.root.after(200, self.load_background)
                 return
 
@@ -144,10 +144,12 @@ class AetherLauncherUI:
         self.current_page = "play"
         self.clear_main_area()
         
+        # Usar um frame transparente para não cobrir o fundo
         container = tk.Frame(self.content_container, bg="", padx=40, pady=40)
         container.pack(fill="both", expand=True)
         
-        tk.Label(container, text="BEM-VINDO AO AETHER LINUX", font=("Segoe UI", 24, "bold"), bg="", fg=self.colors["text"]).pack(anchor="w")
+        # Título com fundo vazio para transparência (se o sistema suportar)
+        tk.Label(container, text="BEM-VINDO AO AETHER LINUX", font=("Segoe UI", 24, "bold"), bg=self.colors["bg"], fg=self.colors["text"]).pack(anchor="w")
         
         self.play_card = tk.Frame(container, bg=self.colors["card"], padx=30, pady=30)
         self.play_card.pack(fill="x", pady=40)
@@ -167,8 +169,8 @@ class AetherLauncherUI:
         self.version_status = tk.Label(self.play_card, text="", bg=self.colors["card"], fg=self.colors["text_dim"], font=("Segoe UI", 9))
         self.version_status.pack(anchor="w", pady=(5, 0))
         
-        self.progress_frame = tk.Frame(container, bg="")
-        self.progress_label = tk.Label(self.progress_frame, text="", bg="", fg=self.colors["text"], font=("Segoe UI", 10))
+        self.progress_frame = tk.Frame(container, bg=self.colors["bg"])
+        self.progress_label = tk.Label(self.progress_frame, text="", bg=self.colors["bg"], fg=self.colors["text"], font=("Segoe UI", 10))
         self.progress_label.pack(anchor="w", pady=(0, 5))
         self.progress_bar = ttk.Progressbar(self.progress_frame, mode='determinate', length=400)
         
@@ -182,23 +184,22 @@ class AetherLauncherUI:
         self.current_page = "versions"
         self.clear_main_area()
         
-        # Scrollable area for versions
-        canvas = tk.Canvas(self.content_container, bg="", highlightthickness=0)
+        canvas = tk.Canvas(self.content_container, bg=self.colors["bg"], highlightthickness=0)
         scrollbar = ttk.Scrollbar(self.content_container, orient="vertical", command=canvas.yview)
-        scrollable_frame = tk.Frame(canvas, bg="")
+        scrollable_frame = tk.Frame(canvas, bg=self.colors["bg"])
 
         scrollable_frame.bind(
             "<Configure>",
             lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
         )
 
-        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw", width=self.root.winfo_width()-260)
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw", width=700)
         canvas.configure(yscrollcommand=scrollbar.set)
 
         canvas.pack(side="left", fill="both", expand=True, padx=40, pady=40)
         scrollbar.pack(side="right", fill="y")
 
-        tk.Label(scrollable_frame, text="GERENCIADOR DE VERSÕES", font=("Segoe UI", 24, "bold"), bg="", fg=self.colors["text"]).pack(anchor="w", pady=(0, 30))
+        tk.Label(scrollable_frame, text="GERENCIADOR DE VERSÕES", font=("Segoe UI", 24, "bold"), bg=self.colors["bg"], fg=self.colors["text"]).pack(anchor="w", pady=(0, 30))
         
         for version in self.available_versions.keys():
             self.create_version_card(scrollable_frame, version)
@@ -208,10 +209,10 @@ class AetherLauncherUI:
         self.current_page = "settings"
         self.clear_main_area()
         
-        container = tk.Frame(self.content_container, bg="", padx=40, pady=40)
+        container = tk.Frame(self.content_container, bg=self.colors["bg"], padx=40, pady=40)
         container.pack(fill="both", expand=True)
         
-        tk.Label(container, text="CONFIGURAÇÕES", font=("Segoe UI", 24, "bold"), bg="", fg=self.colors["text"]).pack(anchor="w", pady=(0, 30))
+        tk.Label(container, text="CONFIGURAÇÕES", font=("Segoe UI", 24, "bold"), bg=self.colors["bg"], fg=self.colors["text"]).pack(anchor="w", pady=(0, 30))
         
         settings_card = tk.Frame(container, bg=self.colors["card"], padx=30, pady=30)
         settings_card.pack(fill="x", pady=10)
@@ -223,9 +224,9 @@ class AetherLauncherUI:
         
         tk.Button(settings_card, text="SALVAR CONFIGURAÇÕES", font=("Segoe UI", 12, "bold"), bg=self.colors["accent"], fg="white", bd=0, cursor="hand2", command=self.save_settings).pack(fill="x", ipady=10)
         
-        danger_frame = tk.Frame(container, bg="", pady=40)
+        danger_frame = tk.Frame(container, bg=self.colors["bg"], pady=40)
         danger_frame.pack(fill="x")
-        tk.Label(danger_frame, text="ZONA DE PERIGO", font=("Segoe UI", 10, "bold"), bg="", fg=self.colors["error"]).pack(anchor="w")
+        tk.Label(danger_frame, text="ZONA DE PERIGO", font=("Segoe UI", 10, "bold"), bg=self.colors["bg"], fg=self.colors["error"]).pack(anchor="w")
         tk.Button(danger_frame, text="DESINSTALAR AETHER LAUNCHER", font=("Segoe UI", 12, "bold"), bg=self.colors["error"], fg="white", bd=0, cursor="hand2", command=self.confirm_uninstall).pack(fill="x", pady=10, ipady=10)
 
     def show_profiles_page(self):
@@ -233,11 +234,11 @@ class AetherLauncherUI:
         self.current_page = "profiles"
         self.clear_main_area()
         
-        container = tk.Frame(self.content_container, bg="", padx=40, pady=40)
+        container = tk.Frame(self.content_container, bg=self.colors["bg"], padx=40, pady=40)
         container.pack(fill="both", expand=True)
         
-        tk.Label(container, text="PERFIS", font=("Segoe UI", 24, "bold"), bg="", fg=self.colors["text"]).pack(anchor="w", pady=(0, 30))
-        tk.Label(container, text="Sistema de perfis será implementado em breve!", font=("Segoe UI", 14), bg="", fg=self.colors["text_dim"]).pack(pady=50)
+        tk.Label(container, text="PERFIS", font=("Segoe UI", 24, "bold"), bg=self.colors["bg"], fg=self.colors["text"]).pack(anchor="w", pady=(0, 30))
+        tk.Label(container, text="Sistema de perfis será implementado em breve!", font=("Segoe UI", 14), bg=self.colors["bg"], fg=self.colors["text_dim"]).pack(pady=50)
 
     def create_version_card(self, parent, version):
         status = self.check_version_installed(version)
@@ -411,7 +412,7 @@ class AetherLauncherUI:
                     uninstall_script = os.path.join(script_dir, "uninstall.sh")
                 
                 if os.path.exists(uninstall_script):
-                    subprocess.Popen(["sudo", "bash", uninstall_script, "--auto"])
+                    subprocess.Popen(["sudo", "bash", uninstall_script])
                     self.root.destroy()
                 else:
                     messagebox.showerror("Erro", "Script de desinstalação não encontrado.")
