@@ -132,20 +132,29 @@ def get_instance_path(base_dir, profile_name):
         
     return path
 
-def get_java_recommendation(version_id):
-    """Recomenda a versão do Java baseada na versão do Minecraft."""
+def get_minecraft_era(version_id):
+    """Classifica a versão do Minecraft em 'eras' para aplicar configurações específicas."""
     try:
-        # 1.21.x -> minor é 21
         parts = version_id.split('.')
-        minor = 0
-        if len(parts) >= 2:
-            minor = int(parts[1])
+        major = int(parts[0]) if len(parts) > 0 else 1
+        minor = int(parts[1]) if len(parts) > 1 else 0
         
-        if minor >= 21:
-            return "java-runtime-delta" # Java 21 (Obrigatório para 1.21+)
-        elif minor >= 17:
-            return "java-runtime-gamma" # Java 17
-        else:
-            return "java-runtime-alpha" # Java 8
+        if major > 1 or minor >= 21: return "v21"      # 1.21+ (Java 21)
+        if minor >= 17: return "modern"                # 1.17 - 1.20 (Java 17)
+        if minor >= 13: return "intermediate"          # 1.13 - 1.16 (Java 8/11/16)
+        if minor >= 7: return "legacy"                 # 1.7 - 1.12 (Java 8)
+        return "ancient"                               # < 1.7 (Java 8 + fixes)
     except:
-        return "java-runtime-delta" # Seguro para versões novas
+        return "modern"
+
+def get_java_recommendation(version_id):
+    """Retorna o runtime Java oficial recomendado pela Mojang para cada era."""
+    era = get_minecraft_era(version_id)
+    runtimes = {
+        "v21": "java-runtime-delta",    # Java 21
+        "modern": "java-runtime-gamma",  # Java 17
+        "intermediate": "java-runtime-alpha", # Java 16/8
+        "legacy": "java-runtime-alpha", # Java 8
+        "ancient": "java-runtime-alpha" # Java 8
+    }
+    return runtimes.get(era, "java-runtime-gamma")

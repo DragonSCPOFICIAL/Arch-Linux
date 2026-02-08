@@ -596,26 +596,9 @@ class AetherLauncherUI:
                 import traceback
                 traceback.print_exc()
             
-            # Detectar versão para aplicar compatibilidade
-            version_parts = vid.replace('w', '').replace('a', '').replace('b', '').split('.')
-            try:
-                major = int(version_parts[0]) if len(version_parts) > 0 else 1
-                minor = int(version_parts[1]) if len(version_parts) > 1 else 0
-            except:
-                major, minor = 1, 0
-            
-            is_v21 = (major > 1) or (major == 1 and minor >= 21)
-            is_recent = (major > 1) or (major == 1 and minor >= 17)
-            is_legacy = major == 1 and minor < 13  # Versões antigas
-            is_very_old = major == 1 and minor < 6  # Versões muito antigas
-            is_ancient = major == 1 and minor < 3   # Versões ancestrais
-            
-            print(f"\n>>> Classificacao da versao:")
-            print(f"    - Minecraft 1.21+: {is_v21}")
-            print(f"    - Recente (1.17+): {is_recent}")
-            print(f"    - Ancestral (< 1.3): {is_ancient}")
-            print(f"    - Muito antiga (< 1.6): {is_very_old}")
-            print(f"    - Legado (< 1.13): {is_legacy}")
+            # Classificar era do Minecraft para configuração precisa
+            era = utils.get_minecraft_era(vid)
+            print(f"\n>>> Era detectada: {era.upper()} para versão {vid}")
             
             # Preparar opções de lançamento
             print(f"\n>>> Preparando para iniciar...")
@@ -648,82 +631,60 @@ class AetherLauncherUI:
                 options=options
             )
             
-            # Configurar ambiente Linux
+            # Configurar ambiente Linux baseado na era
             if self.data.get("use_mesa_optim", True):
-                env = utils.get_compatibility_env(is_recent=is_recent)
+                env = utils.get_compatibility_env(is_recent=(era in ["v21", "modern"]))
             else:
                 env = os.environ.copy()
             
             # Aplicar configurações extras de compatibilidade
             if p.get("compatibility_mode", True):
-                print(">>> Aplicando configuracoes de compatibilidade avançadas...")
+                print(f">>> Aplicando configuracoes de compatibilidade para era {era.upper()}...")
                 
-                if is_ancient:
-                    env["LIBGL_ALWAYS_SOFTWARE"] = "1"
-                
-                # Java options baseadas nas configurações de performance
+                # Java options baseadas nas configurações de performance e era
                 java_opts = []
                 
                 # RAM Dinâmica
                 ram_mb = self.data.get("ram_mb", 4096)
                 java_opts.extend([f"-Xmx{ram_mb}M", f"-Xms{ram_mb//2}M"])
                 
-                # Aikar's Flags Opcionais
+                # Aikar's Flags (Performance)
                 if self.data.get("use_aikar", True):
                     java_opts.extend(utils.get_performance_args())
                 
-                # Forçar aceleração e compatibilidade de módulos Java 17/21+
+                # Flags de Compatibilidade Universais
                 java_opts.extend([
                     "-Dsun.java2d.opengl=true",
                     "-Dorg.lwjgl.util.NoChecks=true",
-                    "-Djava.net.preferIPv4Stack=true",
-                    # Abrir módulos Java para evitar ExceptionInInitializerError em versões novas
-                    "--add-modules", "java.base,java.desktop",
-                    "--add-opens", "java.base/java.lang=ALL-UNNAMED",
-                    "--add-opens", "java.base/java.util=ALL-UNNAMED",
-                    "--add-opens", "java.base/java.io=ALL-UNNAMED",
-                    "--add-opens", "java.desktop/sun.awt=ALL-UNNAMED",
-                    "--add-opens", "java.desktop/sun.java2d=ALL-UNNAMED"
+                    "-Djava.net.preferIPv4Stack=true"
                 ])
                 
-                # Flag específica para 1.21+ se estiver dando erro de inicialização
-                if is_v21:
-                    java_opts.append("-Djava.awt.headless=false")
-                
-                if is_legacy:
+                # Flags Específicas para Eras Modernas (Java 17/21+)
+                if era in ["v21", "modern"]:
                     java_opts.extend([
-                        "-Djava.net.preferIPv4Stack=true",
+                        "--add-modules", "java.base,java.desktop",
+                        "--add-opens", "java.base/java.lang=ALL-UNNAMED",
+                        "--add-opens", "java.base/java.util=ALL-UNNAMED",
+                        "--add-opens", "java.base/java.io=ALL-UNNAMED",
+                        "--add-opens", "java.desktop/sun.awt=ALL-UNNAMED",
+                        "--add-opens", "java.desktop/sun.java2d=ALL-UNNAMED"
+                    ])
+                    if era == "v21":
+                        java_opts.append("-Djava.awt.headless=false")
+                
+                # Flags para Eras Antigas (Legado e Ancestral)
+                if era in ["legacy", "ancient"]:
+                    java_opts.extend([
                         "-Dfml.ignoreInvalidMinecraftCertificates=true",
-                        "-Dfml.ignorePatchDiscrepancies=true",
+                        "-Dfml.ignorePatchDiscrepancies=true"
                     ])
-                
-                if is_very_old:
-                    java_opts.extend([
-                        "-Dminecraft.applet.TargetDirectory=" + inst,
-                        "-Duser.language=en",
-                        "-Duser.country=US",
-                    ])
-                
-                # LWJGL options baseadas na versão
-                if is_legacy:
-                    natives_dir = os.path.join(self.mc_dir, "versions", vid, vid + "-natives")
-                    if not os.path.exists(natives_dir):
-                        version_dir = os.path.join(self.mc_dir, "versions", vid)
-                        if os.path.exists(version_dir):
-                            for item in os.listdir(version_dir):
-                                if "natives" in item:
-                                    natives_dir = os.path.join(version_dir, item)
-                                    break
-                    
-                    if os.path.exists(natives_dir):
-                        java_opts.extend([
-                            f"-Djava.library.path={natives_dir}",
-                            f"-Dorg.lwjgl.librarypath={natives_dir}",
-                        ])
+                    if era == "ancient":
+                        env["LIBGL_ALWAYS_SOFTWARE"] = "1" # Forçar estabilidade em versões muito antigas
+                        java_opts.append("-Dminecraft.applet.TargetDirectory=" + inst)
                 
                 # Aplicar opções ao ambiente
                 env["_JAVA_OPTIONS"] = " ".join(java_opts)
-                print(f"    - Java options otimizadas aplicadas")
+                print(f"    - Java options da era {era.upper()} aplicadas")
             
             set_status("Iniciando Minecraft...")
             
