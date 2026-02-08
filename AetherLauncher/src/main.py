@@ -5,7 +5,6 @@ import json
 import threading
 import subprocess
 import ssl
-import platform
 from PIL import Image, ImageTk
 import minecraft_launcher_lib
 import utils
@@ -16,7 +15,7 @@ ssl._create_default_https_context = ssl._create_unverified_context
 class AetherLauncherUI:
     def __init__(self, root):
         self.root = root
-        self.root.title("Aether Launcher v4.4 - Minecraft Elite Linux (Nativo)")
+        self.root.title("Aether Launcher v4.5 - Minecraft Elite Linux (Nativo)")
         
         # Configuração de Janela
         window_width, window_height = 1050, 680
@@ -27,25 +26,24 @@ class AetherLauncherUI:
         # Cores
         self.colors = {"accent": "#B43D3D"}
         
-        # Pastas e Ativos (Lógica de caminho absoluta baseada na localização do script)
+        # Pastas e Ativos
         self.script_dir = os.path.dirname(os.path.abspath(__file__))
         self.base_dir = os.path.dirname(self.script_dir)
         self.config_dir = os.path.expanduser("~/.config/aetherlauncher")
         self.data_file = os.path.join(self.config_dir, "launcher_data.json")
         self.mc_dir = os.path.expanduser("~/.aetherlauncher/minecraft")
-        
-        # Caminhos de Ativos
         self.assets_dir = os.path.join(self.base_dir, "assets")
         self.avatars_dir = os.path.join(self.assets_dir, "avatars")
+        
+        # Cache de Imagens (Crucial para o Tkinter não deletar as imagens da memória)
+        self.img_cache = {}
         
         self.load_launcher_data()
         self.downloading = False
         self.mc_versions = []
-        self.cached_images = {}
         
         self.setup_ui()
         
-        # Se for o primeiro acesso (sem username salvo), mostra tela de boas-vindas
         if self.username == "Jogador":
             self.show_welcome_screen()
         else:
@@ -94,32 +92,35 @@ class AetherLauncherUI:
         except:
             self.mc_versions = ["1.20.1", "1.19.4", "1.12.2"]
 
-    def get_image(self, path, size):
-        key = f"{path}_{size[0]}x{size[1]}"
-        if key in self.cached_images: return self.cached_images[key]
-        if os.path.exists(path):
-            try:
+    def load_img(self, name, path, size):
+        """Estratégia idêntica ao fundo: Carrega e mantém no cache global do objeto"""
+        try:
+            if os.path.exists(path):
                 img = Image.open(path).resize(size, Image.LANCZOS)
                 photo = ImageTk.PhotoImage(img)
-                self.cached_images[key] = photo
+                self.img_cache[name] = photo
                 return photo
-            except Exception as e:
-                print(f"Erro ao carregar imagem {path}: {e}")
+        except Exception as e:
+            print(f"Erro ao carregar {name}: {e}")
         return None
 
     def setup_ui(self):
         self.canvas = tk.Canvas(self.root, width=1050, height=680, highlightthickness=0, bg="black")
         self.canvas.pack(fill="both", expand=True)
-        self.load_background()
+        
+        # Carregar Fundo (Estratégia de sucesso)
+        bg_path = os.path.join(self.base_dir, "background.png")
+        bg_img = self.load_img("bg", bg_path, (1050, 680))
+        if bg_img: self.canvas.create_image(0, 0, image=bg_img, anchor="nw")
         
         # Sidebar Overlay
         self.canvas.create_rectangle(0, 0, 250, 680, fill="#000000", stipple="gray50", outline="")
         self.canvas.create_text(85, 45, text="BEM-VINDO,", font=("Segoe UI", 7), fill="#ccc", anchor="w")
         self.nick_display = self.canvas.create_text(85, 60, text=self.username, font=("Segoe UI", 11, "bold"), fill="white", anchor="w")
         
-        # Avatar do Usuário
-        self.avatar_label = tk.Label(self.root, bg="#333", bd=0)
-        self.canvas.create_window(47, 52, window=self.avatar_label, width=45, height=45)
+        # Avatar do Usuário (Usando a mesma estratégia de cache)
+        self.avatar_canvas = tk.Canvas(self.root, width=45, height=45, bg="#333", highlightthickness=0)
+        self.canvas.create_window(47, 52, window=self.avatar_canvas)
         self.update_avatar_display()
         
         self.create_sidebar_btn(100, "Configurações", "⚙", self.show_settings)
@@ -143,13 +144,9 @@ class AetherLauncherUI:
 
     def update_avatar_display(self):
         path = os.path.join(self.avatars_dir, self.selected_avatar)
-        img = self.get_image(path, (45, 45))
-        if img: self.avatar_label.config(image=img)
-
-    def load_background(self):
-        bg_path = os.path.join(self.base_dir, "background.png")
-        img = self.get_image(bg_path, (1050, 680))
-        if img: self.canvas.create_image(0, 0, image=img, anchor="nw")
+        img = self.load_img("current_avatar", path, (45, 45))
+        self.avatar_canvas.delete("all")
+        if img: self.avatar_canvas.create_image(0, 0, image=img, anchor="nw")
 
     def create_sidebar_btn(self, y, text, icon, cmd):
         t_id = self.canvas.create_text(40, y, text=f"{icon}  {text}", font=("Segoe UI", 10, "bold"), fill="white", anchor="w")
@@ -164,7 +161,7 @@ class AetherLauncherUI:
             return
             
         grass_path = os.path.join(self.assets_dir, "grass_block.png")
-        grass_img = self.get_image(grass_path, (16, 16))
+        grass_img = self.load_img("grass_icon", grass_path, (16, 16))
         
         for p in self.profiles:
             is_sel = (p["id"] == self.selected_pid)
@@ -172,9 +169,9 @@ class AetherLauncherUI:
             f = tk.Frame(self.profiles_frame, bg=bg, padx=10, pady=8)
             f.pack(fill="x", pady=2)
             
-            icon_lbl = tk.Label(f, bg=bg, bd=0)
-            if grass_img: icon_lbl.config(image=grass_img)
-            icon_lbl.pack(side="left")
+            icon_c = tk.Canvas(f, width=16, height=16, bg=bg, highlightthickness=0)
+            icon_c.pack(side="left")
+            if grass_img: icon_c.create_image(0, 0, image=grass_img, anchor="nw")
             
             lbl = tk.Label(f, text=p["name"], font=("Segoe UI", 9, "bold" if is_sel else "normal"), bg=bg, fg="white")
             lbl.pack(side="left", padx=8)
@@ -280,8 +277,9 @@ class AetherLauncherUI:
             f = tk.Frame(avatar_frame, bg="#1a1a1a")
             f.pack(side="left", expand=True)
             
-            img = self.get_image(os.path.join(self.avatars_dir, file), (64, 64))
-            l = tk.Label(f, image=img, bg="#1a1a1a")
+            img = self.load_img(f"set_{file}", os.path.join(self.avatars_dir, file), (64, 64))
+            l = tk.Label(f, bg="#1a1a1a")
+            if img: l.config(image=img)
             l.pack()
             tk.Radiobutton(f, text=name, variable=self.avatar_var, value=file, bg="#1a1a1a", fg="white", selectcolor="#333").pack()
         
@@ -355,7 +353,7 @@ class AetherLauncherUI:
             elif p["type"] == "Forge":
                 fv = minecraft_launcher_lib.forge.find_forge_version(vid)
                 if fv: minecraft_launcher_lib.forge.install_forge_version(fv, self.mc_dir, callback=cb); final_vid = fv
-            cmd = minecraft_launcher_lib.command.get_minecraft_command(final_vid, self.mc_dir, {"username": self.username, "uuid": "", "token": "", "gameDirectory": inst, "launcherName": "AetherLauncher", "launcherVersion": "4.4"})
+            cmd = minecraft_launcher_lib.command.get_minecraft_command(final_vid, self.mc_dir, {"username": self.username, "uuid": "", "token": "", "gameDirectory": inst, "launcherName": "AetherLauncher", "launcherVersion": "4.5"})
             env = utils.get_compatibility_env() if p.get("compatibility_mode", True) else os.environ.copy()
             self.root.after(0, lambda: self.show_home())
             subprocess.run(cmd, env=env)
