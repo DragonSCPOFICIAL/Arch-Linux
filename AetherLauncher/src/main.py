@@ -473,18 +473,74 @@ class AetherLauncherUI:
                     traceback.print_exc()
                     final_vid = vid
             
-            # Detectar versão do Minecraft para aplicar compatibilidade
-            version_parts = vid.split('.')
-            major = int(version_parts[0]) if len(version_parts) > 0 else 1
-            minor = int(version_parts[1]) if len(version_parts) > 1 else 0
-            patch = int(version_parts[2]) if len(version_parts) > 2 else 0
+            # Instalar Java Runtime correto para a versão
+            set_status("Verificando Java Runtime...")
+            print(f"\n>>> Verificando Java Runtime necessario...")
             
-            is_old_version = major == 1 and minor < 13  # Versões antes da 1.13
-            is_very_old = major == 1 and minor < 6      # Versões antes da 1.6
+            java_executable = None
+            try:
+                # Pegar informações da versão
+                version_data = minecraft_launcher_lib.utils.get_version_list()
+                version_info = next((v for v in version_data if v['id'] == vid), None)
+                
+                if version_info:
+                    # Baixar JSON da versão
+                    import requests
+                    version_json_url = version_info.get('url')
+                    if version_json_url:
+                        response = requests.get(version_json_url)
+                        version_details = response.json()
+                        
+                        # Verificar se tem especificação de Java
+                        if 'javaVersion' in version_details:
+                            java_major = version_details['javaVersion'].get('majorVersion', 8)
+                            print(f">>> Versao Java necessaria: {java_major}")
+                            
+                            # Instalar o Java correto
+                            set_status(f"Baixando Java {java_major}...")
+                            print(f">>> Instalando Java Runtime {java_major}...")
+                            
+                            # Obter lista de runtimes disponíveis
+                            try:
+                                runtime_name = f"java-runtime-gamma" if java_major >= 17 else "java-runtime-alpha"
+                                if java_major >= 21:
+                                    runtime_name = "java-runtime-delta"
+                                
+                                print(f">>> Runtime selecionado: {runtime_name}")
+                                
+                                minecraft_launcher_lib.runtime.install_jvm_runtime(
+                                    runtime_name,
+                                    self.mc_dir,
+                                    callback=callback
+                                )
+                                
+                                java_executable = minecraft_launcher_lib.runtime.get_executable_path(runtime_name, self.mc_dir)
+                                print(f">>> Java instalado em: {java_executable}")
+                                
+                            except Exception as e:
+                                print(f"Aviso ao instalar Java: {e}")
+                
+            except Exception as e:
+                print(f"Aviso ao verificar Java: {e}")
+                import traceback
+                traceback.print_exc()
             
-            print(f"\n>>> Versao detectada: {major}.{minor}.{patch}")
-            print(f">>> Versao antiga (< 1.13): {is_old_version}")
-            print(f">>> Versao muito antiga (< 1.6): {is_very_old}")
+            # Detectar versão para aplicar compatibilidade
+            version_parts = vid.replace('w', '').replace('a', '').replace('b', '').split('.')
+            try:
+                major = int(version_parts[0]) if len(version_parts) > 0 else 1
+                minor = int(version_parts[1]) if len(version_parts) > 1 else 0
+            except:
+                major, minor = 1, 0
+            
+            is_legacy = major == 1 and minor < 13  # Versões antigas
+            is_very_old = major == 1 and minor < 6  # Versões muito antigas
+            is_ancient = major == 1 and minor < 3   # Versões ancestrais
+            
+            print(f"\n>>> Classificacao da versao:")
+            print(f"    - Ancestral (< 1.3): {is_ancient}")
+            print(f"    - Muito antiga (< 1.6): {is_very_old}")
+            print(f"    - Legado (< 1.13): {is_legacy}")
             
             # Preparar opções de lançamento
             print(f"\n>>> Preparando para iniciar...")
@@ -499,6 +555,11 @@ class AetherLauncherUI:
                 "launcherVersion": "4.6"
             }
             
+            # Adicionar executável Java customizado se disponível
+            if java_executable and os.path.exists(java_executable):
+                options["executablePath"] = java_executable
+                print(f">>> Usando Java: {java_executable}")
+            
             # Obter comando de lançamento
             print(f">>> Gerando comando de execucao...")
             cmd = minecraft_launcher_lib.command.get_minecraft_command(
@@ -507,98 +568,100 @@ class AetherLauncherUI:
                 options=options
             )
             
-            # Configurar ambiente Linux com compatibilidade por versão
+            # Configurar ambiente Linux
             env = os.environ.copy()
             
-            # Configurações de compatibilidade
+            # Aplicar configurações de compatibilidade
             if p.get("compatibility_mode", True):
-                print(">>> Aplicando configuracoes de compatibilidade...")
+                print(">>> Aplicando configuracoes de compatibilidade Linux...")
                 
-                # OpenGL/Mesa - essencial para Linux
-                env["MESA_GL_VERSION_OVERRIDE"] = "4.6"
-                env["MESA_GLSL_VERSION_OVERRIDE"] = "460"
+                # OpenGL - essencial para todas as versões
+                env["MESA_GL_VERSION_OVERRIDE"] = "3.2"
+                env["MESA_GLSL_VERSION_OVERRIDE"] = "150"
                 
-                # Não forçar mesa em versões novas se tiver placa dedicada
-                if is_old_version:
-                    env["__GLX_VENDOR_LIBRARY_NAME"] = "mesa"
+                # Forçar software rendering para versões muito antigas
+                if is_ancient:
+                    env["LIBGL_ALWAYS_SOFTWARE"] = "1"
+                    print("    - Software rendering ativado (versao ancestral)")
                 
-                # Configurações Java específicas por versão
-                java_opts = [
-                    "-Djava.awt.headless=false",
-                ]
+                # Java options baseadas na versão
+                java_opts = []
+                
+                # Todas as versões
+                java_opts.extend([
+                    "-Xmx2G",
+                    "-XX:+UnlockExperimentalVMOptions",
+                    "-XX:+UseG1GC",
+                    "-XX:G1NewSizePercent=20",
+                    "-XX:G1ReservePercent=20",
+                    "-XX:MaxGCPauseMillis=50",
+                    "-XX:G1HeapRegionSize=32M",
+                ])
                 
                 # Versões antigas precisam de configurações especiais
-                if is_old_version:
+                if is_legacy:
                     java_opts.extend([
                         "-Djava.net.preferIPv4Stack=true",
-                        "-Dminecraft.applet.TargetDirectory=" + inst,
+                        "-Dfml.ignoreInvalidMinecraftCertificates=true",
+                        "-Dfml.ignorePatchDiscrepancies=true",
                     ])
                 
-                # Versões muito antigas precisam ignorar certificados SSL
+                # Versões muito antigas
                 if is_very_old:
                     java_opts.extend([
-                        "-Dhttp.proxyHost=",
-                        "-Dhttp.proxyPort=",
-                        "-Dhttps.proxyHost=",
-                        "-Dhttps.proxyPort=",
+                        "-Dminecraft.applet.TargetDirectory=" + inst,
+                        "-Duser.language=en",
+                        "-Duser.country=US",
                     ])
                 
-                # LWJGL (biblioteca gráfica) - configurações por versão
-                if is_old_version:
-                    # LWJGL 2.x (versões antigas)
-                    java_opts.extend([
-                        "-Dorg.lwjgl.librarypath=" + os.path.join(self.mc_dir, "versions", vid, vid + "-natives"),
-                        "-Dnet.java.games.input.librarypath=" + os.path.join(self.mc_dir, "versions", vid, vid + "-natives"),
-                    ])
-                else:
-                    # LWJGL 3.x (versões novas)
-                    java_opts.extend([
-                        "-Dorg.lwjgl.util.Debug=false",
-                    ])
+                # LWJGL options baseadas na versão
+                if is_legacy:
+                    natives_dir = os.path.join(self.mc_dir, "versions", vid, vid + "-natives")
+                    if not os.path.exists(natives_dir):
+                        # Tentar encontrar diretório de natives
+                        version_dir = os.path.join(self.mc_dir, "versions", vid)
+                        if os.path.exists(version_dir):
+                            for item in os.listdir(version_dir):
+                                if "natives" in item:
+                                    natives_dir = os.path.join(version_dir, item)
+                                    break
+                    
+                    if os.path.exists(natives_dir):
+                        java_opts.extend([
+                            f"-Djava.library.path={natives_dir}",
+                            f"-Dorg.lwjgl.librarypath={natives_dir}",
+                        ])
+                        print(f"    - Natives configurados: {natives_dir}")
                 
-                # Aplicar opções Java
-                if "_JAVA_OPTIONS" in env:
-                    env["_JAVA_OPTIONS"] = env["_JAVA_OPTIONS"] + " " + " ".join(java_opts)
-                else:
-                    env["_JAVA_OPTIONS"] = " ".join(java_opts)
-                
-                print(f"Java options: {env['_JAVA_OPTIONS']}")
+                # Aplicar opções
+                env["_JAVA_OPTIONS"] = " ".join(java_opts)
+                print(f"    - Java options aplicadas ({len(java_opts)} opcoes)")
             
-            # Paths de bibliotecas nativas
+            # Library paths
             lib_paths = [
                 "/usr/lib",
-                "/usr/lib/x86_64-linux-gnu",
+                "/usr/lib/x86_64-linux-gnu", 
                 "/lib/x86_64-linux-gnu",
                 "/usr/lib64",
+                "/usr/lib/i386-linux-gnu",
             ]
             
-            # Adicionar path das natives do Minecraft
+            # Adicionar natives do Minecraft
             natives_dir = os.path.join(self.mc_dir, "versions", vid, vid + "-natives")
             if os.path.exists(natives_dir):
                 lib_paths.insert(0, natives_dir)
-                print(f">>> Adicionado diretorio de natives: {natives_dir}")
             
-            if "LD_LIBRARY_PATH" in env:
-                env["LD_LIBRARY_PATH"] = ":".join(lib_paths) + ":" + env["LD_LIBRARY_PATH"]
-            else:
-                env["LD_LIBRARY_PATH"] = ":".join(lib_paths)
-            
-            print(f"LD_LIBRARY_PATH: {env['LD_LIBRARY_PATH'][:200]}...")
+            env["LD_LIBRARY_PATH"] = ":".join(lib_paths)
             
             set_status("Iniciando Minecraft...")
             
-            # Log do comando
+            # Log resumido
             print(f"\n{'='*60}")
-            print("COMANDO DE EXECUCAO:")
+            print("INICIANDO MINECRAFT")
             print(f"{'='*60}")
-            cmd_str = " ".join(cmd)
-            if len(cmd_str) > 500:
-                print(cmd_str[:500] + "...")
-            else:
-                print(cmd_str)
-            print(f"{'='*60}")
-            print(f"Diretorio de trabalho: {inst}")
-            print(f"Versao final: {final_vid}")
+            print(f"Versao: {final_vid}")
+            print(f"Diretorio: {inst}")
+            print(f"Java: {java_executable if java_executable else 'sistema'}")
             print(f"{'='*60}\n")
             
             # Iniciar processo
@@ -615,7 +678,7 @@ class AetherLauncherUI:
             
             print(f">>> Processo iniciado! PID: {process.pid}\n")
             
-            # Monitorar saída em tempo real
+            # Monitorar saída
             def monitor_process():
                 print("=== SAIDA DO MINECRAFT ===\n")
                 error_lines = []
@@ -625,27 +688,21 @@ class AetherLauncherUI:
                         line_clean = line.rstrip()
                         print(f"[MC] {line_clean}")
                         
-                        # Capturar linhas de erro
-                        if "ERROR" in line_clean or "Exception" in line_clean or "error" in line_clean.lower():
+                        if "ERROR" in line_clean or "Exception" in line_clean or "FATAL" in line_clean:
                             error_lines.append(line_clean)
                 
                 process.wait()
                 exit_code = process.returncode
                 
-                print(f"\n=== MINECRAFT ENCERRADO ===")
-                print(f"Codigo de saida: {exit_code}\n")
+                print(f"\n=== MINECRAFT ENCERRADO (codigo: {exit_code}) ===\n")
                 
                 if exit_code != 0:
-                    error_msg = f"Minecraft encerrou com codigo de erro: {exit_code}"
+                    error_msg = f"Minecraft encerrou com erro (codigo {exit_code})"
                     
                     if error_lines:
-                        print("\n=== ERROS CAPTURADOS ===")
-                        for err in error_lines[-5:]:  # Últimas 5 linhas de erro
-                            print(err)
-                        print("========================\n")
-                        error_msg += f"\n\nUltimo erro:\n{error_lines[-1][:200]}"
+                        error_msg += f"\n\nErro principal:\n{error_lines[-1][:150]}"
                     
-                    error_msg += "\n\nVerifique o console para detalhes completos."
+                    error_msg += "\n\nVerifique o console para detalhes."
                     self.root.after(0, lambda: messagebox.showerror("Erro", error_msg))
             
             threading.Thread(target=monitor_process, daemon=True).start()
@@ -657,11 +714,11 @@ class AetherLauncherUI:
             import traceback
             error_msg = traceback.format_exc()
             print(f"\n{'='*60}")
-            print("ERRO FATAL:")
+            print("ERRO FATAL")
             print(f"{'='*60}")
             print(error_msg)
             print(f"{'='*60}\n")
-            self.root.after(0, lambda: messagebox.showerror("Erro", f"Erro ao iniciar:\n{str(e)}\n\nVeja o console para detalhes."))
+            self.root.after(0, lambda: messagebox.showerror("Erro", f"Erro:\n{str(e)}\n\nVeja console para detalhes."))
             
         finally:
             self.downloading = False
