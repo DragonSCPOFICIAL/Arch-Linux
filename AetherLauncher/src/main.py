@@ -16,7 +16,7 @@ ssl._create_default_https_context = ssl._create_unverified_context
 class AetherLauncherUI:
     def __init__(self, root):
         self.root = root
-        self.root.title("Aether Launcher v3.7 - Minecraft Elite Linux (Nativo)")
+        self.root.title("Aether Launcher v3.8 - Minecraft Elite Linux (Nativo)")
         
         # Configuração de Janela
         window_width, window_height = 1050, 680
@@ -76,31 +76,19 @@ class AetherLauncherUI:
             self.mc_versions = ["1.20.1", "1.19.4", "1.12.2"]
 
     def setup_ui(self):
-        # Canvas Principal - Onde tudo que é transparente será desenhado
         self.canvas = tk.Canvas(self.root, width=1050, height=680, highlightthickness=0, bg="black")
         self.canvas.pack(fill="both", expand=True)
-        
         self.load_background()
-        
-        # Sidebar Overlay (Semi-transparente)
         self.canvas.create_rectangle(0, 0, 250, 680, fill="#000000", stipple="gray50", outline="")
-        
-        # Header Perfil
         self.canvas.create_text(85, 45, text="BEM-VINDO,", font=("Segoe UI", 7), fill="#ccc", anchor="w")
         self.nick_display = self.canvas.create_text(85, 60, text=self.username, font=("Segoe UI", 11, "bold"), fill="white", anchor="w")
         self.canvas.create_rectangle(25, 35, 70, 70, fill="#333", outline="#555")
-
-        # Botões Sidebar
         self.create_sidebar_btn(100, "Configurações", "⚙", self.show_settings)
         self.create_sidebar_btn(140, "Gerenciar Instalações", "+", self.show_install)
         self.canvas.create_line(25, 185, 225, 185, fill="#444")
-
-        # Perfis Frame
         self.profiles_frame = tk.Frame(self.root, bg="#121212", bd=0)
         self.canvas.create_window(125, 390, window=self.profiles_frame, width=240, height=360, anchor="center")
         self.refresh_profiles_list()
-
-        # Rodapé JOGAR
         self.footer = tk.Frame(self.root, bg=self.colors["accent"], bd=0)
         self.canvas.create_window(125, 635, window=self.footer, width=250, height=90, anchor="center")
         self.btn_play = tk.Button(self.footer, text="JOGAR", font=("Segoe UI", 18, "bold"), bg=self.colors["accent"], fg="white", bd=0, cursor="hand2", activebackground="#963232", command=self.launch_game)
@@ -108,10 +96,7 @@ class AetherLauncherUI:
         self.lbl_ver_info = tk.Label(self.footer, text="", font=("Segoe UI", 8), bg=self.colors["accent"], fg="white")
         self.lbl_ver_info.pack(fill="x", pady=(0, 10))
         self.update_selection_ui()
-
-        # Área de Conteúdo (Usaremos o Canvas para a Home e Frames para Settings/Install)
         self.content_frame = None
-        self.home_elements = []
         self.show_home()
 
     def load_background(self):
@@ -171,17 +156,10 @@ class AetherLauncherUI:
 
     def clear_screen(self):
         if self.content_frame: self.content_frame.destroy(); self.content_frame = None
-        for eid in self.home_elements: self.canvas.delete(eid)
-        self.home_elements = []
 
     def show_home(self):
         self.clear_screen()
-        # Desenhar textos DIRETAMENTE no Canvas para garantir transparência real
-        t1 = self.canvas.create_text(650, 150, text="BEM-VINDO AO AETHER LINUX", font=("Segoe UI", 26, "bold"), fill="white")
-        t2 = self.canvas.create_text(650, 200, text="Aether Launcher: Performance Nativa Ativada", font=("Segoe UI", 11), fill="#ccc")
-        self.home_elements = [t1, t2]
-        
-        # Barra de progresso (apenas se estiver baixando)
+        # A Home agora é TOTALMENTE LIMPA. Apenas o fundo aparece.
         if self.downloading:
             self.content_frame = tk.Frame(self.root, bg="#000000", padx=20, pady=15)
             self.canvas.create_window(650, 580, window=self.content_frame, width=600)
@@ -197,8 +175,7 @@ class AetherLauncherUI:
         tk.Label(self.content_frame, text="CONFIGURAÇÕES", font=("Segoe UI", 18, "bold"), bg="#1a1a1a", fg="white").pack(pady=20)
         tk.Label(self.content_frame, text="Nickname do Jogador", bg="#1a1a1a", fg="#aaa").pack(anchor="w", padx=100)
         e_nick = tk.Entry(self.content_frame, font=("Segoe UI", 12), bg="#333", fg="white", bd=0, insertbackground="white")
-        e_nick.pack(fill="x", padx=100, pady=10, ipady=8)
-        e_nick.insert(0, self.username)
+        e_nick.pack(fill="x", padx=100, pady=10, ipady=8); e_nick.insert(0, self.username)
         def save():
             self.username = e_nick.get().strip(); self.canvas.itemconfig(self.nick_display, text=self.username)
             self.save_launcher_data(); self.show_home()
@@ -252,7 +229,7 @@ class AetherLauncherUI:
             elif p["type"] == "Forge":
                 fv = minecraft_launcher_lib.forge.find_forge_version(vid)
                 if fv: minecraft_launcher_lib.forge.install_forge_version(fv, self.mc_dir, callback=cb); final_vid = fv
-            cmd = minecraft_launcher_lib.command.get_minecraft_command(final_vid, self.mc_dir, {"username": self.username, "uuid": "", "token": "", "gameDirectory": inst, "launcherName": "AetherLauncher", "launcherVersion": "3.7"})
+            cmd = minecraft_launcher_lib.command.get_minecraft_command(final_vid, self.mc_dir, {"username": self.username, "uuid": "", "token": "", "gameDirectory": inst, "launcherName": "AetherLauncher", "launcherVersion": "3.8"})
             env = utils.get_compatibility_env() if p.get("compatibility_mode", True) else os.environ.copy()
             self.root.after(0, lambda: self.show_home())
             subprocess.run(cmd, env=env)
