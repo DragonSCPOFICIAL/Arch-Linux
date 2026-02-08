@@ -15,7 +15,7 @@ ssl._create_default_https_context = ssl._create_unverified_context
 class AetherLauncherUI:
     def __init__(self, root):
         self.root = root
-        self.root.title("Aether Launcher v4.8.4-FINAL - Minecraft Elite Linux (Nativo)")
+        self.root.title("Aether Launcher v4.8.6-ULTIMATE - Minecraft Elite Linux (Nativo)")
         
         # Configuração de Janela
         window_width, window_height = 1050, 680
@@ -764,33 +764,46 @@ class AetherLauncherUI:
                         # Correção Crítica para 1.21.11+: Conflito de Bibliotecas Nativas (JNA/Netty)
                         # Versões 1.21.11+ atualizaram bibliotecas que crasham com certas Aikar's Flags no Linux
                         if vid == "1.21.11":
-                            set_status("Aplicando Patch JNA (1.21.11)...")
-                            print(">>> Aplicando Hotfix para 1.21.11: Ajustando flags e JNA")
-                            # Remover flags problemáticas conhecidas por causar Exit Code 1 nesta versão específica
+                            set_status("Aplicando Patch Ultimate (1.21.11)...")
+                            print(">>> Aplicando Hotfix ULTIMATE para 1.21.11: Desbloqueio Total de Modulos")
+                            
+                            # Limpeza agressiva de flags que conflitam com o novo coletor de lixo e bibliotecas nativas
                             problematic_flags = [
                                 "-XX:MaxTenuringThreshold=1",
                                 "-XX:G1MixedGCLiveThresholdPercent=90",
-                                "-XX:+AlwaysPreTouch"
+                                "-XX:+AlwaysPreTouch",
+                                "-XX:+PerfDisableSharedMem"
                             ]
                             for flag in problematic_flags:
                                 if flag in java_opts: java_opts.remove(flag)
                             
-                            # Forçar JNA a não usar bibliotecas do sistema que podem estar desatualizadas ou em conflito
+                            # Pacote de Compatibilidade ULTIMATE para Java 21 + Netty 4.2.7 + JNA 5.17.0
                             java_opts.extend([
-                                "-Djna.nosys=true",
-                                "-Djna.nounpack=false",
-                                "-Djna.debug_load=true",
-                                # Novas permissões para Netty 4.2.7 e Jtracy na 1.21.11+
+                                # Desbloqueio de Modulos (Essencial para NoClassDefFoundError e Reflection)
+                                "--add-modules", "java.management,java.base,java.desktop,jdk.unsupported",
+                                "--add-opens", "java.base/java.lang=ALL-UNNAMED",
                                 "--add-opens", "java.base/java.lang.reflect=ALL-UNNAMED",
+                                "--add-opens", "java.base/java.util=ALL-UNNAMED",
                                 "--add-opens", "java.base/java.util.concurrent=ALL-UNNAMED",
-                                "--add-opens", "java.base/sun.nio.ch=ALL-UNNAMED",
+                                "--add-opens", "java.base/java.io=ALL-UNNAMED",
+                                "--add-opens", "java.base/java.net=ALL-UNNAMED",
                                 "--add-opens", "java.base/java.nio=ALL-UNNAMED",
+                                "--add-opens", "java.base/sun.nio.ch=ALL-UNNAMED",
                                 "--add-opens", "java.management/java.lang.management=ALL-UNNAMED",
                                 "--add-opens", "java.management/sun.management=ALL-UNNAMED",
+                                "--add-opens", "java.desktop/sun.awt=ALL-UNNAMED",
+                                "--add-opens", "jdk.unsupported/sun.misc=ALL-UNNAMED",
+                                
+                                # Correcoes de Bibliotecas Nativas
+                                "-Djna.nosys=true",
+                                "-Djna.nounpack=true",
                                 "-Dio.netty.tryReflectionSetAccessible=true",
-                                "-Dno_jtracy=true",
+                                "-Dio.netty.noUnsafe=false",
+                                
+                                # Correcoes de Log e Telemetria
                                 "-Dlog4j2.disable.jmx=true",
                                 "-Dlog4j2.formatMsgNoLookups=true",
+                                "-Dno_jtracy=true",
                                 "-Djava.util.logging.manager=org.apache.logging.log4j.jul.LogManager"
                             ])
                         elif "-XX:MaxTenuringThreshold=1" in java_opts:
