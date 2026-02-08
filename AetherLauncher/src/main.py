@@ -283,54 +283,81 @@ class AetherLauncherUI:
 
     def show_settings(self):
         self.clear_content()
-        self.active_content_frame = tk.Frame(self.root, bg="#1a1a1a", padx=50, pady=30)
-        self.active_content_id = self.canvas.create_window(650, 340, window=self.active_content_frame, width=750, height=550)
+        self.active_content_frame = tk.Frame(self.root, bg="#1a1a1a", padx=30, pady=20)
+        self.active_content_id = self.canvas.create_window(650, 340, window=self.active_content_frame, width=800, height=600)
         
-        tk.Label(self.active_content_frame, text="CONFIGURAÇÕES", font=("Segoe UI", 18, "bold"), bg="#1a1a1a", fg="white").pack(pady=20)
+        # Notebook para Abas
+        nb = ttk.Notebook(self.active_content_frame)
+        nb.pack(fill="both", expand=True)
         
-        # Nickname
-        tk.Label(self.active_content_frame, text="Nickname do Jogador", bg="#1a1a1a", fg="#aaa").pack(anchor="w", padx=50)
-        e_nick = tk.Entry(self.active_content_frame, font=("Segoe UI", 12), bg="#333", fg="white", bd=0, insertbackground="white")
-        e_nick.pack(fill="x", padx=50, pady=10, ipady=8); e_nick.insert(0, self.username)
+        # --- ABA PERFIL ---
+        f_profile = tk.Frame(nb, bg="#1a1a1a", padx=20, pady=20)
+        nb.add(f_profile, text=" Perfil ")
         
-        # Skin URL (Opcional)
-        tk.Label(self.active_content_frame, text="URL da Skin (Opcional)", bg="#1a1a1a", fg="#aaa").pack(anchor="w", padx=50, pady=(10, 0))
-        e_skin = tk.Entry(self.active_content_frame, font=("Segoe UI", 10), bg="#333", fg="white", bd=0, insertbackground="white")
-        e_skin.pack(fill="x", padx=50, pady=5, ipady=5)
-        e_skin.insert(0, self.data.get("skin_url", ""))
+        tk.Label(f_profile, text="Nickname do Jogador", bg="#1a1a1a", fg="#aaa").pack(anchor="w")
+        e_nick = tk.Entry(f_profile, font=("Segoe UI", 12), bg="#333", fg="white", bd=0, insertbackground="white")
+        e_nick.pack(fill="x", pady=10, ipady=8); e_nick.insert(0, self.username)
         
-        # Seleção de Avatar
-        tk.Label(self.active_content_frame, text="Escolha seu Avatar", bg="#1a1a1a", fg="#aaa").pack(anchor="w", padx=50, pady=(20, 5))
-        avatar_frame = tk.Frame(self.active_content_frame, bg="#1a1a1a")
-        avatar_frame.pack(fill="x", padx=50)
+        tk.Label(f_profile, text="URL da Skin (Opcional)", bg="#1a1a1a", fg="#aaa").pack(anchor="w", pady=(10, 0))
+        e_skin = tk.Entry(f_profile, font=("Segoe UI", 10), bg="#333", fg="white", bd=0, insertbackground="white")
+        e_skin.pack(fill="x", pady=5, ipady=5); e_skin.insert(0, self.data.get("skin_url", ""))
+        
+        tk.Label(f_profile, text="Escolha seu Avatar", bg="#1a1a1a", fg="#aaa").pack(anchor="w", pady=(20, 5))
+        avatar_frame = tk.Frame(f_profile, bg="#1a1a1a")
+        avatar_frame.pack(fill="x")
         
         self.avatar_var = tk.StringVar(value=self.selected_avatar)
         avatars = [("Steve", "steve.png"), ("Alex", "alex.png"), ("Herobrine", "herobrine.png")]
-        
         for name, file in avatars:
             f = tk.Frame(avatar_frame, bg="#1a1a1a")
             f.pack(side="left", expand=True)
-            
             img = self.get_photo(f"set_{file}", os.path.join(self.avatars_dir, file), (64, 64))
             l = tk.Label(f, bg="#1a1a1a")
             if img: l.config(image=img)
             l.pack()
             tk.Radiobutton(f, text=name, variable=self.avatar_var, value=file, bg="#1a1a1a", fg="white", selectcolor="#333").pack()
+
+        # --- ABA PERFORMANCE ---
+        f_perf = tk.Frame(nb, bg="#1a1a1a", padx=20, pady=20)
+        nb.add(f_perf, text=" Performance ")
         
+        sys_info = utils.get_system_info()
+        tk.Label(f_perf, text="DETECÇÃO DE HARDWARE", font=("Segoe UI", 10, "bold"), bg="#1a1a1a", fg=self.colors["accent"]).pack(anchor="w", pady=(0, 10))
+        tk.Label(f_perf, text=f"RAM Detectada: {sys_info['ram_gb']}GB | CPU: {sys_info['cpu_cores']} Cores | GPU: {sys_info['gpu_vendor'].upper()}", bg="#1a1a1a", fg="#888").pack(anchor="w")
+        
+        tk.Label(f_perf, text="Memória RAM (MB)", bg="#1a1a1a", fg="#aaa").pack(anchor="w", pady=(20, 5))
+        ram_val = self.data.get("ram_mb", 4096)
+        e_ram = tk.Scale(f_perf, from_=1024, to=sys_info['ram_gb']*1024 if sys_info['ram_gb'] > 1 else 2048, orient="horizontal", bg="#1a1a1a", fg="white", highlightthickness=0)
+        e_ram.set(ram_val); e_ram.pack(fill="x")
+        
+        self.perf_vars = {
+            "use_aikar": tk.BooleanVar(value=self.data.get("use_aikar", True)),
+            "use_high_priority": tk.BooleanVar(value=self.data.get("use_high_priority", True)),
+            "use_mesa_optim": tk.BooleanVar(value=self.data.get("use_mesa_optim", True))
+        }
+        
+        tk.Checkbutton(f_perf, text="Usar Aikar's Flags (Estabilidade de FPS)", variable=self.perf_vars["use_aikar"], bg="#1a1a1a", fg="white", selectcolor="#333", activebackground="#1a1a1a").pack(anchor="w", pady=5)
+        tk.Checkbutton(f_perf, text="Prioridade de Processo Alta (Nice/Ionice)", variable=self.perf_vars["use_high_priority"], bg="#1a1a1a", fg="white", selectcolor="#333", activebackground="#1a1a1a").pack(anchor="w", pady=5)
+        tk.Checkbutton(f_perf, text="Otimizações de Driver Mesa (Latência Zero)", variable=self.perf_vars["use_mesa_optim"], bg="#1a1a1a", fg="white", selectcolor="#333", activebackground="#1a1a1a").pack(anchor="w", pady=5)
+
+        # Botões de Ação
         btn_frame = tk.Frame(self.active_content_frame, bg="#1a1a1a")
-        btn_frame.pack(pady=30)
-        tk.Button(btn_frame, text="VOLTAR", bg="#444", fg="white", bd=0, font=("Segoe UI", 10, "bold"), padx=30, pady=10, command=self.show_home).pack(side="left", padx=10)
+        btn_frame.pack(pady=20)
+        tk.Button(btn_frame, text="CANCELAR", bg="#444", fg="white", bd=0, font=("Segoe UI", 10, "bold"), padx=30, pady=10, command=self.show_home).pack(side="left", padx=10)
         
         def save():
             self.username = e_nick.get().strip() or "Jogador"
             self.selected_avatar = self.avatar_var.get()
             self.data["skin_url"] = e_skin.get().strip()
+            self.data["ram_mb"] = e_ram.get()
+            for k, v in self.perf_vars.items(): self.data[k] = v.get()
+            
             self.canvas.itemconfig(self.nick_display, text=self.username)
             self.update_avatar_display()
             self.save_launcher_data()
             self.show_home()
             
-        tk.Button(btn_frame, text="SALVAR", bg=self.colors["accent"], fg="white", bd=0, font=("Segoe UI", 10, "bold"), padx=30, pady=10, command=save).pack(side="left", padx=10)
+        tk.Button(btn_frame, text="SALVAR TUDO", bg=self.colors["accent"], fg="white", bd=0, font=("Segoe UI", 10, "bold"), padx=30, pady=10, command=save).pack(side="left", padx=10)
 
     def show_install(self, edit_profile=None):
         self.clear_content()
@@ -619,28 +646,30 @@ class AetherLauncherUI:
                 options=options
             )
             
-            # Configurar ambiente Linux usando o conector otimizado no utils.py
-            env = utils.get_compatibility_env(is_recent=is_recent)
+            # Configurar ambiente Linux
+            if self.data.get("use_mesa_optim", True):
+                env = utils.get_compatibility_env(is_recent=is_recent)
+            else:
+                env = os.environ.copy()
             
-            # Aplicar configurações extras de compatibilidade se o modo estiver ativo
+            # Aplicar configurações extras de compatibilidade
             if p.get("compatibility_mode", True):
                 print(">>> Aplicando configuracoes de compatibilidade avançadas...")
                 
-                # Forçar software rendering para versões muito antigas se necessário
                 if is_ancient:
                     env["LIBGL_ALWAYS_SOFTWARE"] = "1"
-                    print("    - Software rendering ativado (versao ancestral)")
                 
-                # Java options baseadas na versão
+                # Java options baseadas nas configurações de performance
                 java_opts = []
                 
-                # Otimizações de Memória
-                java_opts.extend(["-Xmx4G", "-Xms2G"])
+                # RAM Dinâmica
+                ram_mb = self.data.get("ram_mb", 4096)
+                java_opts.extend([f"-Xmx{ram_mb}M", f"-Xms{ram_mb//2}M"])
                 
-                # Integrar Flags de Performance Extrema (Aikar's Flags)
-                java_opts.extend(utils.get_performance_args())
+                # Aikar's Flags Opcionais
+                if self.data.get("use_aikar", True):
+                    java_opts.extend(utils.get_performance_args())
                 
-                # Forçar aceleração de hardware no Java
                 java_opts.append("-Dsun.java2d.opengl=true")
                 
                 if is_legacy:
@@ -689,15 +718,14 @@ class AetherLauncherUI:
             print(f"Java: {java_executable if java_executable else 'sistema'}")
             print(f"{'='*60}\n")
             
-            # Iniciar processo com Alta Prioridade (Nativo Linux)
-            print(">>> Iniciando processo do Minecraft com Alta Prioridade...")
-            
-            # Tentar usar 'nice' para dar prioridade de CPU e 'ionice' para prioridade de disco
-            final_cmd = ["nice", "-n", "-10"] + cmd
-            try:
-                # Tenta ionice para prioridade de disco (pode precisar de permissão, mas não falha o comando se não tiver)
-                final_cmd = ["ionice", "-c", "2", "-n", "0"] + final_cmd
-            except: pass
+            # Iniciar processo
+            final_cmd = cmd
+            if self.data.get("use_high_priority", True):
+                print(">>> Iniciando com Alta Prioridade (Nice/Ionice)...")
+                final_cmd = ["nice", "-n", "-10"] + cmd
+                try:
+                    final_cmd = ["ionice", "-c", "2", "-n", "0"] + final_cmd
+                except: pass
 
             process = subprocess.Popen(
                 final_cmd,

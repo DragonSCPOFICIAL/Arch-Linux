@@ -3,22 +3,44 @@ import subprocess
 import platform
 import shutil
 
-def get_gpu_info():
-    """Retorna informações detalhadas da GPU para otimização do conector."""
-    try:
-        # Tenta glxinfo primeiro
-        res = subprocess.run(['glxinfo', '-B'], capture_output=True, text=True, timeout=2)
-        if res.returncode == 0:
-            return res.stdout
-    except:
-        pass
+def get_system_info():
+    """Retorna um dicionário com informações detalhadas do sistema para otimização."""
+    info = {
+        "ram_gb": 4,
+        "gpu_vendor": "unknown",
+        "has_vulkan": False,
+        "cpu_cores": 1
+    }
     
     try:
-        # Fallback para lspci
-        res = subprocess.run(['lspci', '-v', '-s', '$(lspci | grep VGA | cut -d" " -f1)'], capture_output=True, text=True, shell=True)
-        return res.stdout
-    except:
-        return "Não foi possível detectar detalhes da GPU. Usando configurações genéricas de compatibilidade."
+        # Detectar RAM total
+        with open('/proc/meminfo', 'r') as f:
+            mem = f.readline()
+            info["ram_gb"] = int(mem.split()[1]) // 1024 // 1024
+    except: pass
+
+    try:
+        # Detectar CPU cores
+        info["cpu_cores"] = os.cpu_count() or 1
+    except: pass
+
+    try:
+        # Detectar GPU e Vulkan
+        gpu_res = subprocess.run(['glxinfo', '-B'], capture_output=True, text=True, timeout=2)
+        if "Intel" in gpu_res.stdout: info["gpu_vendor"] = "intel"
+        elif "AMD" in gpu_res.stdout: info["gpu_vendor"] = "amd"
+        elif "NVIDIA" in gpu_res.stdout: info["gpu_vendor"] = "nvidia"
+        
+        vulkan_res = subprocess.run(['vulkaninfo', '--summary'], capture_output=True, text=True, timeout=2)
+        info["has_vulkan"] = vulkan_res.returncode == 0
+    except: pass
+    
+    return info
+
+def get_gpu_info():
+    """Retorna informações legíveis da GPU."""
+    info = get_system_info()
+    return f"GPU: {info['gpu_vendor'].upper()} | RAM: {info['ram_gb']}GB | Cores: {info['cpu_cores']}"
 
 def get_compatibility_env(is_recent=True):
     """
