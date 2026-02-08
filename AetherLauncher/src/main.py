@@ -16,7 +16,7 @@ ssl._create_default_https_context = ssl._create_unverified_context
 class AetherLauncherUI:
     def __init__(self, root):
         self.root = root
-        self.root.title("Aether Launcher v4.3 - Minecraft Elite Linux (Nativo)")
+        self.root.title("Aether Launcher v4.4 - Minecraft Elite Linux (Nativo)")
         
         # Configuração de Janela
         window_width, window_height = 1050, 680
@@ -27,11 +27,14 @@ class AetherLauncherUI:
         # Cores
         self.colors = {"accent": "#B43D3D"}
         
-        # Pastas e Ativos
-        self.base_dir = os.path.dirname(os.path.dirname(__file__))
+        # Pastas e Ativos (Lógica de caminho absoluta baseada na localização do script)
+        self.script_dir = os.path.dirname(os.path.abspath(__file__))
+        self.base_dir = os.path.dirname(self.script_dir)
         self.config_dir = os.path.expanduser("~/.config/aetherlauncher")
         self.data_file = os.path.join(self.config_dir, "launcher_data.json")
         self.mc_dir = os.path.expanduser("~/.aetherlauncher/minecraft")
+        
+        # Caminhos de Ativos
         self.assets_dir = os.path.join(self.base_dir, "assets")
         self.avatars_dir = os.path.join(self.assets_dir, "avatars")
         
@@ -100,7 +103,8 @@ class AetherLauncherUI:
                 photo = ImageTk.PhotoImage(img)
                 self.cached_images[key] = photo
                 return photo
-            except: pass
+            except Exception as e:
+                print(f"Erro ao carregar imagem {path}: {e}")
         return None
 
     def setup_ui(self):
@@ -113,7 +117,7 @@ class AetherLauncherUI:
         self.canvas.create_text(85, 45, text="BEM-VINDO,", font=("Segoe UI", 7), fill="#ccc", anchor="w")
         self.nick_display = self.canvas.create_text(85, 60, text=self.username, font=("Segoe UI", 11, "bold"), fill="white", anchor="w")
         
-        # Avatar do Usuário (Imagem Real)
+        # Avatar do Usuário
         self.avatar_label = tk.Label(self.root, bg="#333", bd=0)
         self.canvas.create_window(47, 52, window=self.avatar_label, width=45, height=45)
         self.update_avatar_display()
@@ -168,7 +172,6 @@ class AetherLauncherUI:
             f = tk.Frame(self.profiles_frame, bg=bg, padx=10, pady=8)
             f.pack(fill="x", pady=2)
             
-            # Ícone de Bloco de Grama Real
             icon_lbl = tk.Label(f, bg=bg, bd=0)
             if grass_img: icon_lbl.config(image=grass_img)
             icon_lbl.pack(side="left")
@@ -352,7 +355,7 @@ class AetherLauncherUI:
             elif p["type"] == "Forge":
                 fv = minecraft_launcher_lib.forge.find_forge_version(vid)
                 if fv: minecraft_launcher_lib.forge.install_forge_version(fv, self.mc_dir, callback=cb); final_vid = fv
-            cmd = minecraft_launcher_lib.command.get_minecraft_command(final_vid, self.mc_dir, {"username": self.username, "uuid": "", "token": "", "gameDirectory": inst, "launcherName": "AetherLauncher", "launcherVersion": "4.3"})
+            cmd = minecraft_launcher_lib.command.get_minecraft_command(final_vid, self.mc_dir, {"username": self.username, "uuid": "", "token": "", "gameDirectory": inst, "launcherName": "AetherLauncher", "launcherVersion": "4.4"})
             env = utils.get_compatibility_env() if p.get("compatibility_mode", True) else os.environ.copy()
             self.root.after(0, lambda: self.show_home())
             subprocess.run(cmd, env=env)
