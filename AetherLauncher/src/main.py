@@ -743,7 +743,14 @@ class AetherLauncherUI:
                             java_opts.extend([
                                 "-Djna.nosys=true",
                                 "-Djna.nounpack=false",
-                                "-Djna.debug_load=true" # Ativar debug para caso ainda dê erro
+                                "-Djna.debug_load=true",
+                                # Novas permissões para Netty 4.2.7 e Jtracy na 1.21.11+
+                                "--add-opens", "java.base/java.lang.reflect=ALL-UNNAMED",
+                                "--add-opens", "java.base/java.util.concurrent=ALL-UNNAMED",
+                                "--add-opens", "java.base/sun.nio.ch=ALL-UNNAMED",
+                                "--add-opens", "java.base/java.nio=ALL-UNNAMED",
+                                "-Dio.netty.tryReflectionSetAccessible=true",
+                                "-Dno_jtracy=true" # Desativar Jtracy se causar crash em drivers antigos
                             ])
                         elif "-XX:MaxTenuringThreshold=1" in java_opts:
                             java_opts.remove("-XX:MaxTenuringThreshold=1")
