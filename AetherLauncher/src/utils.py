@@ -70,19 +70,18 @@ def get_compatibility_env(is_recent=True):
     # Corrige problemas de interface em algumas distros
     env["_JAVA_AWT_WM_NONREPARENTING"] = "1"
     
-    # Prioriza bibliotecas do sistema para evitar conflitos com natives do MC
-    # No Linux, o erro ExceptionInInitializerError costuma ser falta de bibliotecas X11 ou OpenGL
-    lib_paths = [
-        "/usr/lib/x86_64-linux-gnu",
-        "/usr/lib/x86_64-linux-gnu/dri",
-        "/usr/lib64",
-        "/usr/lib",
-        "/lib/x86_64-linux-gnu",
-        "/usr/local/lib"
-    ]
-    # Adicionar bibliotecas nativas primeiro para garantir que o LWJGL use as do sistema
-    env["LD_LIBRARY_PATH"] = ":".join(lib_paths)
-    env["LD_PRELOAD"] = "" # Limpa preloads que possam causar conflito
+    # No Linux, ExceptionInInitializerError muitas vezes é conflito entre bibliotecas nativas
+    # Vamos deixar o launcher gerenciar os natives, mas garantir que os drivers de vídeo do sistema estejam acessíveis
+    sys_libs = "/usr/lib/x86_64-linux-gnu:/usr/lib64:/usr/lib"
+    if "LD_LIBRARY_PATH" in env:
+        env["LD_LIBRARY_PATH"] = f"{env['LD_LIBRARY_PATH']}:{sys_libs}"
+    else:
+        env["LD_LIBRARY_PATH"] = sys_libs
+    
+    # Garantir que o Java não tente usar o Wayland se estiver dando erro (forçar X11)
+    env["_JAVA_AWT_WM_NONREPARENTING"] = "1"
+    env["QT_QPA_PLATFORM"] = "xcb"
+    env["GDK_BACKEND"] = "x11"
     
     return env
 

@@ -670,12 +670,16 @@ class AetherLauncherUI:
                 if self.data.get("use_aikar", True):
                     java_opts.extend(utils.get_performance_args())
                 
-                # Forçar aceleração e desativar verificações que causam crash no Linux
+                # Forçar aceleração e compatibilidade de módulos Java 17+
                 java_opts.extend([
                     "-Dsun.java2d.opengl=true",
                     "-Dorg.lwjgl.util.NoChecks=true",
-                    "-Dorg.lwjgl.librarypath=/usr/lib/x86_64-linux-gnu",
-                    "-Djava.net.preferIPv4Stack=true"
+                    "-Djava.net.preferIPv4Stack=true",
+                    # Abrir módulos Java para evitar ExceptionInInitializerError em versões novas
+                    "--add-modules", "java.base,java.desktop",
+                    "--add-opens", "java.base/java.lang=ALL-UNNAMED",
+                    "--add-opens", "java.base/java.util=ALL-UNNAMED",
+                    "--add-opens", "java.base/java.io=ALL-UNNAMED"
                 ])
                 
                 if is_legacy:
