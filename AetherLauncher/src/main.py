@@ -728,7 +728,7 @@ class AetherLauncherUI:
                         # Correção Crítica para 1.21.11+: Conflito de Bibliotecas Nativas (JNA/Netty)
                         # Versões 1.21.11+ atualizaram bibliotecas que crasham com certas Aikar's Flags no Linux
                         if vid == "1.21.11":
-                            print(">>> Aplicando Hotfix para 1.21.11: Reduzindo flags de performance para evitar conflito JNA")
+                            print(">>> Aplicando Hotfix para 1.21.11: Ajustando flags e JNA")
                             # Remover flags problemáticas conhecidas por causar Exit Code 1 nesta versão específica
                             problematic_flags = [
                                 "-XX:MaxTenuringThreshold=1",
@@ -737,6 +737,13 @@ class AetherLauncherUI:
                             ]
                             for flag in problematic_flags:
                                 if flag in java_opts: java_opts.remove(flag)
+                            
+                            # Forçar JNA a não usar bibliotecas do sistema que podem estar desatualizadas ou em conflito
+                            java_opts.extend([
+                                "-Djna.nosys=true",
+                                "-Djna.nounpack=false",
+                                "-Djna.debug_load=true" # Ativar debug para caso ainda dê erro
+                            ])
                         elif "-XX:MaxTenuringThreshold=1" in java_opts:
                             java_opts.remove("-XX:MaxTenuringThreshold=1")
                 

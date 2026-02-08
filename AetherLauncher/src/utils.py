@@ -130,10 +130,16 @@ def get_compatibility_env(is_recent=True, profile_index=None):
         env["MESA_GL_VERSION_OVERRIDE"] = "4.6" if is_recent else "3.2"
         env["MESA_GLSL_VERSION_OVERRIDE"] = "460" if is_recent else "150"
     
-    # Injeção Universal de Bibliotecas do Sistema
+    # Injeção Universal de Bibliotecas do Sistema (Ajustado para 1.21.11+)
+    # Na 1.21.11+, a JNA 5.17.0 conflita se forçarmos o LD_LIBRARY_PATH do sistema antes das libs do jogo
     sys_paths = ["/usr/lib/x86_64-linux-gnu", "/usr/lib/x86_64-linux-gnu/dri", "/usr/lib64", "/usr/lib"]
     current_ld = env.get("LD_LIBRARY_PATH", "")
-    env["LD_LIBRARY_PATH"] = ":".join(sys_paths) + (":" + current_ld if current_ld else "")
+    
+    # Se for uma versão muito recente (1.21.11+), colocamos as libs do sistema DEPOIS para não quebrar a JNA interna
+    if is_recent:
+        env["LD_LIBRARY_PATH"] = (current_ld + ":" if current_ld else "") + ":".join(sys_paths)
+    else:
+        env["LD_LIBRARY_PATH"] = ":".join(sys_paths) + (":" + current_ld if current_ld else "")
     
     # Fixes de Interface e Janela (X11)
     env["_JAVA_AWT_WM_NONREPARENTING"] = "1"
