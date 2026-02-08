@@ -93,6 +93,22 @@ def get_autotune_profiles():
                 "GALLIUM_DRIVER": "llvmpipe",
                 "vblank_mode": "0"
             }
+        },
+        {
+            "id": 4,
+            "name": "Aether Wine-Like (Intel HD 3000 Fix)",
+            "env": {
+                "LIBGL_DRI3_DISABLE": "1",
+                "MESA_GL_VERSION_OVERRIDE": "4.4FC",
+                "MESA_GLSL_VERSION_OVERRIDE": "440",
+                "MESA_DEBUG": "silent",
+                "vblank_mode": "0",
+                "allow_glsl_extension_directive_midshader": "true",
+                "allow_higher_compat_version": "true",
+                "INTEL_DEBUG": "nocreatcontext,no_vbo",
+                "MESA_LOADER_DRIVER_OVERRIDE": "i965",
+                "MESA_EXTENSION_OVERRIDE": "GL_ARB_separate_shader_objects GL_ARB_explicit_attrib_location GL_ARB_shading_language_420pack"
+            }
         }
     ]
 
@@ -184,7 +200,7 @@ def get_minecraft_era(version_id):
         major = int(parts[0]) if len(parts) > 0 else 1
         minor = int(parts[1]) if len(parts) > 1 else 0
         
-        if major > 1 or minor >= 21: return "v21"      # 1.21+ (Java 21)
+        if major > 1 or (major == 1 and minor >= 21): return "v21"      # 1.21+ (Java 21)
         if minor >= 17: return "modern"                # 1.17 - 1.20 (Java 17)
         if minor >= 13: return "intermediate"          # 1.13 - 1.16 (Java 8/11/16)
         if minor >= 7: return "legacy"                 # 1.7 - 1.12 (Java 8)
