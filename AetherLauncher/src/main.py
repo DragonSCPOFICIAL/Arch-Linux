@@ -343,6 +343,18 @@ class AetherLauncherUI:
         self.perf_vars["use_autotune"] = tk.BooleanVar(value=self.data.get("use_autotune", True))
         tk.Checkbutton(f_perf, text="Auto-Tune Inteligente (Testar e selecionar melhor driver)", variable=self.perf_vars["use_autotune"], bg="#1a1a1a", fg="white", selectcolor="#333", activebackground="#1a1a1a").pack(anchor="w", pady=5)
 
+        tk.Label(f_perf, text="Perfil de Driver (Manual)", bg="#1a1a1a", fg="#aaa").pack(anchor="w", pady=(10, 5))
+        self.driver_profiles = utils.get_autotune_profiles()
+        profile_names = [p["name"] for p in self.driver_profiles]
+        self.driver_var = ttk.Combobox(f_perf, values=profile_names, state="readonly", font=("Segoe UI", 10))
+        self.driver_var.pack(fill="x", pady=5)
+        
+        current_manual = self.data.get("manual_profile")
+        if current_manual is not None and 0 <= current_manual < len(self.driver_profiles):
+            self.driver_var.set(self.driver_profiles[current_manual]["name"])
+        else:
+            self.driver_var.set("Nativo (Mesa Otimizado)")
+
         # --- ABA PERSONALIZAÇÃO ---
         f_custom = tk.Frame(nb, bg="#1a1a1a", padx=20, pady=20)
         nb.add(f_custom, text=" Personalização ")
@@ -366,6 +378,13 @@ class AetherLauncherUI:
             self.data["skin_url"] = e_skin.get().strip()
             self.data["ram_mb"] = e_ram.get()
             for k, v in self.perf_vars.items(): self.data[k] = v.get()
+            
+            # Salvar Perfil de Driver Manual
+            selected_driver_name = self.driver_var.get()
+            for p in self.driver_profiles:
+                if p["name"] == selected_driver_name:
+                    self.data["manual_profile"] = p["id"]
+                    break
             
             # Aplicar Tema
             selected_theme = self.theme_var.get()
@@ -733,8 +752,13 @@ class AetherLauncherUI:
             # Iniciar processo
             # Adicionar flag para ignorar erros de inicialização de classes se necessário
             final_cmd = cmd
-             # Sistema de Auto-Tune Inteligente
-            if self.data.get("use_autotune", True) and self.data.get("best_profile") is None:
+             # Sistema de Seleção de Driver (Manual ou Auto-Tune)
+            manual_profile = self.data.get("manual_profile")
+            
+            if not self.data.get("use_autotune", True) and manual_profile is not None:
+                print(f">>> Usando Perfil de Driver Manual: {manual_profile}")
+                env = utils.get_compatibility_env(is_recent=(era in ["v21", "modern"]), profile_index=manual_profile)
+            elif self.data.get("use_autotune", True) and self.data.get("best_profile") is None:
                 print(">>> Iniciando Auto-Tune de Hardware...")
                 profiles = utils.get_autotune_profiles()
                 best_id = 0
