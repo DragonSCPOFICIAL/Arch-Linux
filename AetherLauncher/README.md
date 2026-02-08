@@ -1,44 +1,45 @@
-# 🎮 Aether Launcher - Minecraft Launcher Elite
+# 🎮 Aether Launcher v3.0 - Minecraft Elite Linux (Nativo)
 
-O **Aether Launcher** é um inicializador de Minecraft de alta performance, otimizado especificamente para sistemas **Linux (Arch Linux e derivados)**. Ele oferece uma experiência nativa, rápida e visualmente integrada.
+O **Aether Launcher** é um inicializador de Minecraft de alta performance, otimizado especificamente para sistemas **Linux (Arch Linux e derivados)**. Ele oferece uma experiência nativa, rápida e visualmente moderna, aproveitando ao máximo o hardware através de drivers nativos.
 
-## ✨ Características
+## ✨ Novidades da Versão 3.0
 
-- **Performance Absurda**: Otimizado para rodar com o máximo de desempenho em Arch Linux.
-- **Fundo Dinâmico**: Interface moderna com suporte a background personalizado.
-- **Instalação Nativa**: Integração completa com o menu de aplicativos do sistema.
-- **Gestão de Versões**: Baixe e gerencie múltiplas versões do Minecraft com facilidade.
+- **🚀 Performance Nativa Absurda**: Sem Wine, sem emulação. Execução direta para o máximo de FPS.
+- **🛠️ Engine de Compatibilidade**: Suporte exclusivo para hardware antigo através de *Mesa Overrides*, permitindo rodar versões modernas em GPUs limitadas.
+- **📦 Gestão de Instâncias**: Cada perfil possui sua própria pasta isolada (`mods`, `config`, etc.).
+- **🔌 Mod Loaders Automáticos**: Instalação de **Forge** e **Fabric** integrada e automática.
+- **💎 Interface Moderna**: UI redesenhada com base em padrões modernos, limpa e intuitiva.
 
 ---
 
 ## 🚀 Instalação Rápida (Comando Único)
 
-Para realizar uma **instalação limpa** ou **atualizar** para a versão mais recente, copie e cole o comando abaixo no seu terminal. Este comando remove qualquer resquício de instalações anteriores para evitar conflitos:
+Para realizar uma **instalação limpa** ou **atualizar** para a versão mais recente, copie e cole o comando abaixo no seu terminal:
 
 ```bash
-sudo rm -rf Arch-Linux && git clone https://github.com/DragonSCPOFICIAL/Arch-Linux.git && cd Arch-Linux/AetherLauncher && sudo bash install_arch.sh
+sudo rm -rf Arch-Linux && git clone https://github.com/DragonSCPOFICIAL/Arch-Linux.git && cd Arch-Linux/AetherLauncher && sudo bash install.sh
 ```
 
-> **Nota**: Após a instalação, você pode abrir o launcher pelo menu de aplicativos ou digitando `aetherlauncher` no terminal.
+> **Nota**: O script `install.sh` agora configura automaticamente todas as novas dependências (Java 17, bibliotecas de download, etc.).
 
 ---
 
-## 🗑️ Desinstalação Total (Limpeza Completa)
+## 🗑️ Desinstalação Total
 
-Se você deseja remover o launcher e **APAGAR LITERALMENTE TUDO** relacionado a ele (incluindo configurações, perfis e todos os arquivos do Minecraft), utilize o comando abaixo:
+Se você deseja remover o launcher e todos os seus arquivos:
 
 ```bash
 sudo bash /opt/aetherlauncher/uninstall.sh
 ```
 
-Este script de desinstalação foi projetado para ser implacável e não deixar nenhum rastro ou pasta vazia no seu sistema.
-
 ---
 
-## 📋 Requisitos do Sistema
+## 📂 Estrutura do Projeto
 
-- **Sistema**: Arch Linux, Manjaro, EndeavourOS ou qualquer derivado.
-- **Dependências**: O instalador configura automaticamente o Python 3, Tkinter, Pillow e Requests.
+- `src/main.py`: Interface gráfica e lógica de fluxo.
+- `src/utils.py`: Motor de compatibilidade e utilitários de sistema.
+- `AetherLauncher.sh`: Script de inicialização otimizado.
+- `install.sh`: Instalador automatizado.
 
 ---
 **Desenvolvido e Mantido por [DragonSCPOFICIAL](https://github.com/DragonSCPOFICIAL)**

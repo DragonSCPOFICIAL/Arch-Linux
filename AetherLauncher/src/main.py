@@ -5,298 +5,303 @@ import json
 import threading
 import subprocess
 import ssl
-import urllib.request
-import shutil
 from PIL import Image, ImageTk
 import minecraft_launcher_lib
+import utils # Nosso novo módulo
 
-# Configurações de SSL para evitar erros de certificado em downloads
+# Configurações globais
 ssl._create_default_https_context = ssl._create_unverified_context
 
 class AetherLauncherUI:
     def __init__(self, root):
         self.root = root
-        self.root.title("Aether Launcher - Minecraft Elite Linux (Nativo)")
+        self.root.title("Aether Launcher v3.0 - Minecraft Elite Linux (Nativo)")
         
-        # Centralizar a janela
-        window_width = 1000
-        window_height = 650
-        screen_width = self.root.winfo_screenwidth()
-        screen_height = self.root.winfo_screenheight()
-        x = (screen_width // 2) - (window_width // 2)
-        y = (screen_height // 2) - (window_height // 2)
-        self.root.geometry(f"{window_width}x{window_height}+{x}+{y}")
-        self.root.configure(bg="#EAEAEA")
+        # Configuração de Janela
+        window_width, window_height = 1050, 680
+        sw, sh = self.root.winfo_screenwidth(), self.root.winfo_screenheight()
+        self.root.geometry(f"{window_width}x{window_height}+{(sw-window_width)//2}+{(sh-window_height)//2}")
+        self.root.configure(bg="#F5F5F5")
         self.root.resizable(False, False)
         
-        # Design System (Baseado na referência moderna)
+        # Design System Expandido
         self.colors = {
-            "bg": "#EAEAEA",      
+            "bg": "#F5F5F5",      
             "sidebar": "#FFFFFF", 
-            "card": "#FFFFFF",
             "accent": "#B43D3D",  
-            "success": "#B43D3D", 
-            "text": "#333333",
-            "text_dim": "#666666",
-            "border": "#DDDDDD",
-            "selected": "#F0F0F0"
+            "text": "#2C3E50",
+            "text_dim": "#7F8C8D",
+            "border": "#E0E0E0",
+            "hover": "#F8F9FA",
+            "success": "#27AE60"
         }
         
-        # Config Base
+        # Estrutura de Pastas e Dados
         self.config_dir = os.path.expanduser("~/.config/aetherlauncher")
-        self.profiles_file = os.path.join(self.config_dir, "profiles_v3.json")
+        self.data_file = os.path.join(self.config_dir, "launcher_data.json")
+        self.mc_dir = os.path.expanduser("~/.aetherlauncher/minecraft")
         os.makedirs(self.config_dir, exist_ok=True)
+        os.makedirs(self.mc_dir, exist_ok=True)
         
-        # Caminhos do Minecraft
-        self.base_minecraft_dir = os.path.expanduser("~/.aetherlauncher/minecraft")
-        os.makedirs(self.base_minecraft_dir, exist_ok=True)
+        # Carregamento de Dados
+        self.load_launcher_data()
         
-        # Estado Inicial
         self.downloading = False
-        self.data = self.load_data()
-        self.profiles = self.data.get("profiles", [
-            {"name": "Latest Release", "version": "latest-release", "type": "Vanilla", "id": "p1"},
-            {"name": "1.12.2 Forge", "version": "1.12.2", "type": "Forge", "id": "p2"}
-        ])
-        self.selected_profile_id = self.data.get("last_profile_id", self.profiles[0]["id"])
-        self.username = self.data.get("username", "DragonSCP")
-        
         self.setup_ui()
         
-    def load_data(self):
-        if os.path.exists(self.profiles_file):
-            try:
-                with open(self.profiles_file, 'r') as f:
-                    return json.load(f)
-            except: return {}
-        return {}
+    def load_launcher_data(self):
+        if os.path.exists(self.data_file):
+            with open(self.data_file, 'r') as f:
+                self.data = json.load(f)
+        else:
+            self.data = {
+                "username": "DragonSCP",
+                "last_profile": "p_default",
+                "profiles": [
+                    {"name": "Minecraft 1.12.2", "version": "1.12.2", "type": "Vanilla", "id": "p_default", "compatibility_mode": True}
+                ],
+                "settings": {"ram": "2G", "auto_compatibility": True}
+            }
+        self.profiles = self.data["profiles"]
+        self.selected_pid = self.data["last_profile"]
+        self.username = self.data["username"]
 
-    def save_data(self):
-        data = {
-            "username": self.username,
-            "last_profile_id": self.selected_profile_id,
-            "profiles": self.profiles
-        }
-        try:
-            with open(self.profiles_file, 'w') as f:
-                json.dump(data, f, indent=4)
-        except Exception as e:
-            print(f"Erro ao salvar: {e}")
+    def save_launcher_data(self):
+        self.data["profiles"] = self.profiles
+        self.data["last_profile"] = self.selected_pid
+        self.data["username"] = self.username
+        with open(self.data_file, 'w') as f:
+            json.dump(self.data, f, indent=4)
 
     def setup_ui(self):
-        # Layout Principal
-        self.sidebar = tk.Frame(self.root, bg=self.colors["sidebar"], width=250, bd=0)
+        # Sidebar
+        self.sidebar = tk.Frame(self.root, bg=self.colors["sidebar"], width=260, bd=0)
         self.sidebar.pack(side="left", fill="y")
         self.sidebar.pack_propagate(False)
         
+        # Divisor Sutil
         tk.Frame(self.root, bg=self.colors["border"], width=1).pack(side="left", fill="y")
         
-        self.main_content = tk.Frame(self.root, bg=self.colors["bg"])
-        self.main_content.pack(side="right", fill="both", expand=True)
+        # Área Principal
+        self.main = tk.Frame(self.root, bg=self.colors["bg"])
+        self.main.pack(side="right", fill="both", expand=True)
         
-        # --- SIDEBAR ---
-        # Perfil do Usuário
-        self.profile_frame = tk.Frame(self.sidebar, bg=self.colors["sidebar"], pady=20, padx=20)
-        self.profile_frame.pack(fill="x")
+        # --- COMPONENTES SIDEBAR ---
+        # Header Perfil
+        p_header = tk.Frame(self.sidebar, bg=self.colors["sidebar"], pady=25, padx=20)
+        p_header.pack(fill="x")
+        self.avatar = tk.Canvas(p_header, width=45, height=45, bg="#34495E", highlightthickness=0)
+        self.avatar.pack(side="left")
         
-        self.avatar_canvas = tk.Canvas(self.profile_frame, width=40, height=40, bg="#333", highlightthickness=0)
-        self.avatar_canvas.pack(side="left")
+        u_info = tk.Frame(p_header, bg=self.colors["sidebar"], padx=12)
+        u_info.pack(side="left", fill="x")
+        tk.Label(u_info, text="BEM-VINDO,", font=("Segoe UI", 7, "bold"), bg=self.colors["sidebar"], fg=self.colors["text_dim"]).pack(anchor="w")
+        self.u_name_lbl = tk.Label(u_info, text=self.username, font=("Segoe UI", 11, "bold"), bg=self.colors["sidebar"], fg=self.colors["text"])
+        self.u_name_lbl.pack(anchor="w")
+
+        # Navegação
+        self.nav = tk.Frame(self.sidebar, bg=self.colors["sidebar"])
+        self.nav.pack(fill="both", expand=True)
         
-        user_info = tk.Frame(self.profile_frame, bg=self.colors["sidebar"], padx=10)
-        user_info.pack(side="left", fill="x")
-        tk.Label(user_info, text="Logado como", font=("Segoe UI", 8), bg=self.colors["sidebar"], fg=self.colors["text_dim"]).pack(anchor="w")
-        self.user_lbl = tk.Label(user_info, text=self.username, font=("Segoe UI", 10, "bold"), bg=self.colors["sidebar"], fg=self.colors["text"])
-        self.user_lbl.pack(anchor="w")
+        self.add_nav_item("Configurações", "⚙", self.open_settings)
+        self.add_nav_item("Gerenciar Instalações", "+", self.open_profile_editor)
         
-        # Menu
-        self.nav_frame = tk.Frame(self.sidebar, bg=self.colors["sidebar"], pady=10)
-        self.nav_frame.pack(fill="both", expand=True)
+        tk.Frame(self.nav, bg=self.colors["border"], height=1).pack(fill="x", pady=15, padx=25)
         
-        self.create_sidebar_btn("Configurações", "⚙", self.show_settings)
-        self.create_sidebar_btn("Gerenciar Instalações", "+", self.show_edit_installation)
+        # Lista de Instalações
+        self.inst_list = tk.Frame(self.nav, bg=self.colors["sidebar"])
+        self.inst_list.pack(fill="both", expand=True)
+        self.refresh_profiles()
         
-        tk.Frame(self.nav_frame, bg=self.colors["border"], height=1).pack(fill="x", pady=10, padx=20)
+        # Rodapé JOGAR
+        self.footer = tk.Frame(self.sidebar, bg=self.colors["accent"], height=90)
+        self.footer.pack(side="bottom", fill="x")
         
-        # Lista de Perfis
-        self.profile_list_frame = tk.Frame(self.nav_frame, bg=self.colors["sidebar"])
-        self.profile_list_frame.pack(fill="both", expand=True)
-        self.refresh_profile_list()
-        
-        # Botão JOGAR
-        self.play_section = tk.Frame(self.sidebar, bg=self.colors["accent"], height=80)
-        self.play_section.pack(side="bottom", fill="x")
-        
-        self.play_btn = tk.Button(self.play_section, text="JOGAR", font=("Segoe UI", 16, "bold"), 
+        self.btn_play = tk.Button(self.footer, text="JOGAR", font=("Segoe UI", 18, "bold"), 
                                  bg=self.colors["accent"], fg="white", bd=0, cursor="hand2",
-                                 activebackground="#963232", command=self.start_launch)
-        self.play_btn.pack(fill="both", expand=True, pady=(10,0))
+                                 activebackground="#922B2B", command=self.launch_game)
+        self.btn_play.pack(fill="both", expand=True, pady=(12,0))
         
-        self.version_subtext = tk.Label(self.play_section, text="", font=("Segoe UI", 8), 
-                                      bg=self.colors["accent"], fg="white")
-        self.version_subtext.pack(fill="x", pady=(0, 10))
-        self.update_display()
+        self.lbl_ver_info = tk.Label(self.footer, text="", font=("Segoe UI", 8), bg=self.colors["accent"], fg="white")
+        self.lbl_ver_info.pack(fill="x", pady=(0, 12))
+        self.update_selection_ui()
 
-        # --- CONTEÚDO ---
-        self.banner_frame = tk.Frame(self.main_content, bg=self.colors["bg"], padx=40, pady=40)
-        self.banner_frame.pack(fill="both", expand=True)
+        # --- COMPONENTES PRINCIPAIS ---
+        # Banner de Destaque
+        self.banner = tk.Frame(self.main, bg="#2C3E50", bd=0)
+        self.banner.place(relx=0.5, rely=0.4, anchor="center", relwidth=0.9, relheight=0.6)
         
-        # Imagem Central (Placeholder)
-        self.img_box = tk.Frame(self.banner_frame, bg="#333", bd=0)
-        self.img_box.place(relx=0.5, rely=0.45, anchor="center", relwidth=0.85, relheight=0.6)
-        
-        # Barra de Progresso
-        self.progress_container = tk.Frame(self.main_content, bg=self.colors["bg"], height=80)
-        self.progress_container.pack(side="bottom", fill="x", padx=40, pady=20)
-        
-        self.progress_label = tk.Label(self.progress_container, text="Pronto", bg=self.colors["bg"], fg=self.colors["text_dim"], font=("Segoe UI", 9))
-        self.progress_label.pack(anchor="w")
-        
-        self.progress_bar = ttk.Progressbar(self.progress_container, mode='determinate', length=100)
-        self.progress_bar.pack(fill="x", pady=5)
-        self.progress_container.pack_forget()
+        # News/Status Box
+        self.news = tk.Frame(self.main, bg="white", bd=1, relief="flat")
+        self.news.place(relx=0.5, rely=0.08, anchor="center", relwidth=0.9, height=45)
+        tk.Label(self.news, text="Aether Launcher: Performance Nativa Linux Ativada", font=("Segoe UI", 9), bg="white", fg=self.colors["text"]).pack(pady=12)
 
-    def create_sidebar_btn(self, text, icon, command):
-        f = tk.Frame(self.nav_frame, bg=self.colors["sidebar"], padx=20, pady=8)
+        # Barra de Progresso Avançada
+        self.prog_box = tk.Frame(self.main, bg=self.colors["bg"])
+        self.prog_box.pack(side="bottom", fill="x", padx=50, pady=30)
+        
+        self.prog_lbl = tk.Label(self.prog_box, text="Sistema Pronto", bg=self.colors["bg"], fg=self.colors["text_dim"], font=("Segoe UI", 9))
+        self.prog_lbl.pack(anchor="w")
+        
+        style = ttk.Style()
+        style.configure("Aether.Horizontal.TProgressbar", thickness=10, bordercolor=self.colors["border"], lightcolor=self.colors["accent"], pcolor=self.colors["accent"])
+        self.prog_bar = ttk.Progressbar(self.prog_box, mode='determinate', style="Aether.Horizontal.TProgressbar")
+        self.prog_bar.pack(fill="x", pady=8)
+        self.prog_box.pack_forget()
+
+    def add_nav_item(self, text, icon, cmd):
+        f = tk.Frame(self.nav, bg=self.colors["sidebar"], padx=25, pady=10)
         f.pack(fill="x")
-        tk.Label(f, text=icon, font=("Segoe UI", 12), bg=self.colors["sidebar"], fg=self.colors["text_dim"], width=2).pack(side="left")
-        tk.Label(f, text=text, font=("Segoe UI", 10), bg=self.colors["sidebar"], fg=self.colors["text"]).pack(side="left", padx=10)
-        f.bind("<Button-1>", lambda e: command())
-        for c in f.winfo_children(): c.bind("<Button-1>", lambda e: command())
-        f.bind("<Enter>", lambda e: f.config(bg=self.colors["selected"]))
+        tk.Label(f, text=icon, font=("Segoe UI", 13), bg=self.colors["sidebar"], fg=self.colors["text_dim"], width=3).pack(side="left")
+        tk.Label(f, text=text, font=("Segoe UI", 10, "bold"), bg=self.colors["sidebar"], fg=self.colors["text"]).pack(side="left", padx=10)
+        f.bind("<Button-1>", lambda e: cmd())
+        for c in f.winfo_children(): c.bind("<Button-1>", lambda e: cmd())
+        f.bind("<Enter>", lambda e: f.config(bg=self.colors["hover"]))
         f.bind("<Leave>", lambda e: f.config(bg=self.colors["sidebar"]))
 
-    def refresh_profile_list(self):
-        for w in self.profile_list_frame.winfo_children(): w.destroy()
+    def refresh_profiles(self):
+        for w in self.inst_list.winfo_children(): w.destroy()
         for p in self.profiles:
-            sel = (p["id"] == self.selected_profile_id)
-            bg = "#D0D0D0" if sel else self.colors["sidebar"]
-            f = tk.Frame(self.profile_list_frame, bg=bg, padx=20, pady=8)
+            is_sel = (p["id"] == self.selected_pid)
+            bg = "#F0F0F0" if is_sel else self.colors["sidebar"]
+            f = tk.Frame(self.inst_list, bg=bg, padx=25, pady=12)
             f.pack(fill="x")
-            canvas = tk.Canvas(f, width=20, height=20, bg="#5D8A3E", highlightthickness=0)
-            canvas.pack(side="left")
-            tk.Label(f, text=p["name"], font=("Segoe UI", 10), bg=bg, fg=self.colors["text"]).pack(side="left", padx=10)
+            # Ícone de bloco
+            tk.Canvas(f, width=22, height=22, bg="#5D8A3E", highlightthickness=0).pack(side="left")
+            tk.Label(f, text=p["name"], font=("Segoe UI", 10), bg=bg, fg=self.colors["text"]).pack(side="left", padx=12)
             f.bind("<Button-1>", lambda e, pid=p["id"]: self.select_profile(pid))
             for c in f.winfo_children(): c.bind("<Button-1>", lambda e, pid=p["id"]: self.select_profile(pid))
 
     def select_profile(self, pid):
-        self.selected_profile_id = pid
-        self.update_display()
-        self.refresh_profile_list()
-        self.save_data()
+        self.selected_pid = pid
+        self.update_selection_ui()
+        self.refresh_profiles()
+        self.save_launcher_data()
 
-    def update_display(self):
-        p = next((x for x in self.profiles if x["id"] == self.selected_profile_id), self.profiles[0])
-        self.version_subtext.config(text=f"{p['type']} {p['version']}")
+    def update_selection_ui(self):
+        p = next((x for x in self.profiles if x["id"] == self.selected_pid), self.profiles[0])
+        self.lbl_ver_info.config(text=f"{p['type']} {p['version']}")
 
-    def show_settings(self):
-        new_nick = filedialog.askstring("Ajustes", "Mudar Nickname:", initialvalue=self.username)
-        if new_nick:
-            self.username = new_nick
-            self.user_lbl.config(text=self.username)
-            self.save_data()
+    def open_settings(self):
+        nick = filedialog.askstring("Ajustes", "Nickname do Jogador:", initialvalue=self.username)
+        if nick:
+            self.username = nick
+            self.u_name_lbl.config(text=self.username)
+            self.save_launcher_data()
 
-    def show_edit_installation(self):
-        dialog = tk.Toplevel(self.root)
-        dialog.title("Editar Instalação")
-        dialog.geometry("500x550")
-        dialog.configure(bg="white")
-        dialog.transient(self.root)
-        dialog.grab_set()
+    def open_profile_editor(self):
+        ed = tk.Toplevel(self.root)
+        ed.title("Nova Instalação")
+        ed.geometry("520x580")
+        ed.configure(bg="white")
+        ed.transient(self.root)
+        ed.grab_set()
 
-        tk.Label(dialog, text="Editar Instalação", font=("Segoe UI", 16, "bold"), bg="white", pady=20).pack()
+        tk.Label(ed, text="Configurar Instalação", font=("Segoe UI", 18, "bold"), bg="white", pady=25).pack()
         
-        tk.Label(dialog, text="Nome da Instalação", bg="white", fg=self.colors["text_dim"], font=("Segoe UI", 9)).pack(anchor="w", padx=40)
-        name_ent = tk.Entry(dialog, bg="#F0F0F0", bd=0, font=("Segoe UI", 11))
-        name_ent.pack(fill="x", padx=40, pady=(5, 15), ipady=8)
-        name_ent.insert(0, "Nova Instalação")
+        # Campos
+        tk.Label(ed, text="Nome da Instalação", bg="white", fg=self.colors["text_dim"], font=("Segoe UI", 9)).pack(anchor="w", padx=45)
+        e_name = tk.Entry(ed, bg="#F7F9FB", bd=0, font=("Segoe UI", 11))
+        e_name.pack(fill="x", padx=45, pady=(5, 15), ipady=10)
+        e_name.insert(0, "Nova Instância")
 
-        tk.Label(dialog, text="Loader", bg="white", fg=self.colors["text_dim"], font=("Segoe UI", 9)).pack(anchor="w", padx=40)
-        type_var = tk.StringVar(value="Vanilla")
-        tf = tk.Frame(dialog, bg="white")
-        tf.pack(fill="x", padx=40, pady=5)
+        tk.Label(ed, text="Versão do Minecraft", bg="white", fg=self.colors["text_dim"], font=("Segoe UI", 9)).pack(anchor="w", padx=45)
+        e_ver = tk.Entry(ed, bg="#F7F9FB", bd=0, font=("Segoe UI", 11))
+        e_ver.pack(fill="x", padx=45, pady=(5, 15), ipady=10)
+        e_ver.insert(0, "1.20.1")
+
+        tk.Label(ed, text="Mod Loader", bg="white", fg=self.colors["text_dim"], font=("Segoe UI", 9)).pack(anchor="w", padx=45)
+        t_var = tk.StringVar(value="Vanilla")
+        tf = tk.Frame(ed, bg="white")
+        tf.pack(fill="x", padx=45, pady=5)
         for t in ["Vanilla", "Forge", "Fabric"]:
-            tk.Radiobutton(tf, text=t, variable=type_var, value=t, bg="white").pack(side="left", padx=10)
+            tk.Radiobutton(tf, text=t, variable=t_var, value=t, bg="white", font=("Segoe UI", 10)).pack(side="left", padx=10)
 
-        tk.Label(dialog, text="Versão do Minecraft", bg="white", fg=self.colors["text_dim"], font=("Segoe UI", 9)).pack(anchor="w", padx=40)
-        ver_ent = tk.Entry(dialog, bg="#F0F0F0", bd=0, font=("Segoe UI", 11))
-        ver_ent.pack(fill="x", padx=40, pady=(5, 15), ipady=8)
-        ver_ent.insert(0, "1.20.1")
+        # Opção de Compatibilidade
+        c_var = tk.BooleanVar(value=True)
+        tk.Checkbutton(ed, text="Modo de Compatibilidade (Hardware Antigo)", variable=c_var, bg="white", font=("Segoe UI", 9)).pack(anchor="w", padx=45, pady=10)
 
         def save():
-            p = {"name": name_ent.get(), "version": ver_ent.get(), "type": type_var.get(), "id": f"p_{os.urandom(3).hex()}"}
-            self.profiles.append(p)
-            self.select_profile(p["id"])
-            dialog.destroy()
+            new_p = {
+                "name": e_name.get(),
+                "version": e_ver.get(),
+                "type": t_var.get(),
+                "id": f"p_{os.urandom(4).hex()}",
+                "compatibility_mode": c_var.get()
+            }
+            self.profiles.append(new_p)
+            self.select_profile(new_p["id"])
+            ed.destroy()
 
-        tk.Button(dialog, text="SALVAR", bg=self.colors["accent"], fg="white", bd=0, font=("Segoe UI", 10, "bold"), padx=40, pady=10, command=save).pack(side="bottom", pady=30)
+        tk.Button(ed, text="CRIAR INSTALAÇÃO", bg=self.colors["accent"], fg="white", bd=0, font=("Segoe UI", 11, "bold"), padx=50, pady=12, command=save).pack(side="bottom", pady=40)
 
-    def start_launch(self):
+    def launch_game(self):
         if self.downloading: return
         self.downloading = True
-        self.play_btn.config(state="disabled", text="BAIXANDO...")
-        self.progress_container.pack(side="bottom", fill="x", padx=40, pady=20)
-        threading.Thread(target=self.run_logic, daemon=True).start()
+        self.btn_play.config(state="disabled", text="INICIANDO...")
+        self.prog_box.pack(side="bottom", fill="x", padx=50, pady=30)
+        threading.Thread(target=self.engine_run, daemon=True).start()
 
-    def run_logic(self):
+    def engine_run(self):
         try:
-            p = next((x for x in self.profiles if x["id"] == self.selected_profile_id), self.profiles[0])
+            p = next((x for x in self.profiles if x["id"] == self.selected_pid), self.profiles[0])
             vid = p["version"]
-            if vid == "latest-release": vid = minecraft_launcher_lib.utils.get_latest_version()["release"]
             
-            # Isolamento de Instância
-            inst_dir = os.path.join(self.base_minecraft_dir, "instances", p["name"].replace(" ", "_"))
-            os.makedirs(inst_dir, exist_ok=True)
-
+            # 1. Preparar Instância Isolada
+            inst_path = utils.get_instance_path(self.mc_dir, p["name"])
+            
             # Callbacks
             cb = {
-                "setStatus": lambda t: self.root.after(0, lambda: self.progress_label.config(text=t)),
-                "setProgress": lambda v: self.root.after(0, lambda: self.progress_bar.config(value=v)),
-                "setMax": lambda v: self.root.after(0, lambda: self.progress_bar.config(maximum=v))
+                "setStatus": lambda t: self.root.after(0, lambda: self.prog_lbl.config(text=t)),
+                "setProgress": lambda v: self.root.after(0, lambda: self.prog_bar.config(value=v)),
+                "setMax": lambda v: self.root.after(0, lambda: self.prog_bar.config(maximum=v))
             }
 
-            # 1. Download Java Automático
-            self.root.after(0, lambda: self.progress_label.config(text="Verificando Java Runtime..."))
-            # O launcher lib gerencia runtimes se configurado, mas vamos usar o nativo do sistema ou baixar se necessário
-            # Para simplificar e garantir sucesso no Linux, usamos o java do sistema ou instalamos via lib
+            # 2. Instalação Base e Loader
+            self.root.after(0, lambda: self.prog_lbl.config(text=f"Sincronizando Minecraft {vid}..."))
+            minecraft_launcher_lib.install.install_minecraft_version(vid, self.mc_dir, callback=cb)
             
-            # 2. Instalação Base
-            self.root.after(0, lambda: self.progress_label.config(text=f"Baixando Minecraft {vid}..."))
-            minecraft_launcher_lib.install.install_minecraft_version(vid, self.base_minecraft_dir, callback=cb)
-
-            # 3. Mod Loaders
             final_vid = vid
             if p["type"] == "Fabric":
-                self.root.after(0, lambda: self.progress_label.config(text="Instalando Fabric Loader..."))
-                fab_v = minecraft_launcher_lib.fabric.get_latest_loader_version()
-                minecraft_launcher_lib.fabric.install_fabric(vid, self.base_minecraft_dir, loader_version=fab_v, callback=cb)
-                final_vid = minecraft_launcher_lib.fabric.get_fabric_version(vid, fab_v)
+                self.root.after(0, lambda: self.prog_lbl.config(text="Integrando Fabric..."))
+                fv = minecraft_launcher_lib.fabric.get_latest_loader_version()
+                minecraft_launcher_lib.fabric.install_fabric(vid, self.mc_dir, loader_version=fv, callback=cb)
+                final_vid = minecraft_launcher_lib.fabric.get_fabric_version(vid, fv)
             elif p["type"] == "Forge":
-                self.root.after(0, lambda: self.progress_label.config(text="Instalando Forge..."))
-                forge_v = minecraft_launcher_lib.forge.find_forge_version(vid)
-                if forge_v:
-                    minecraft_launcher_lib.forge.install_forge_version(forge_v, self.base_minecraft_dir, callback=cb)
-                    final_vid = forge_v
+                self.root.after(0, lambda: self.prog_lbl.config(text="Integrando Forge..."))
+                fv = minecraft_launcher_lib.forge.find_forge_version(vid)
+                if fv:
+                    minecraft_launcher_lib.forge.install_forge_version(fv, self.mc_dir, callback=cb)
+                    final_vid = fv
 
-            # 4. Launch
+            # 3. Configurações de Lançamento
             options = {
                 "username": self.username,
                 "uuid": "", "token": "",
-                "gameDirectory": inst_dir, # Pasta isolada para mods/configs
+                "gameDirectory": inst_path,
                 "launcherName": "AetherLauncher",
-                "launcherVersion": "3.0"
+                "launcherVersion": "3.0",
+                "jvmArguments": ["-Xmx2G", "-Xms1G"]
             }
             
-            self.root.after(0, lambda: self.progress_label.config(text="Abrindo Minecraft Nativo..."))
-            cmd = minecraft_launcher_lib.command.get_minecraft_command(final_vid, self.base_minecraft_dir, options)
+            # 4. Modo de Compatibilidade (O diferencial do nosso Launcher)
+            env = os.environ.copy()
+            if p.get("compatibility_mode", True):
+                self.root.after(0, lambda: self.prog_lbl.config(text="Ativando Engine de Compatibilidade Linux..."))
+                env = utils.get_compatibility_env()
+
+            # 5. Execução
+            cmd = minecraft_launcher_lib.command.get_minecraft_command(final_vid, self.mc_dir, options)
+            self.root.after(0, lambda: self.prog_box.pack_forget())
             
-            self.root.after(0, lambda: self.progress_container.pack_forget())
-            subprocess.run(cmd)
+            # Rodar processo com ambiente de compatibilidade
+            subprocess.run(cmd, env=env)
 
         except Exception as e:
-            self.root.after(0, lambda: messagebox.showerror("Erro", f"Erro no Launcher: {str(e)}"))
+            self.root.after(0, lambda: messagebox.showerror("Erro Crítico", f"Falha no Engine: {str(e)}"))
         finally:
             self.downloading = False
-            self.root.after(0, lambda: self.play_btn.config(state="normal", text="JOGAR"))
+            self.root.after(0, lambda: self.btn_play.config(state="normal", text="JOGAR"))
 
 if __name__ == "__main__":
     root = tk.Tk()
