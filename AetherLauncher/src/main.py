@@ -395,7 +395,6 @@ class AetherLauncherUI:
             
             def set_progress(progress):
                 download_info["current"] = progress
-                print(f"[PROGRESSO] {progress}/{download_info['max']}")
                 def update():
                     if hasattr(self, 'prog_bar'):
                         self.prog_bar.config(value=progress)
@@ -404,7 +403,6 @@ class AetherLauncherUI:
             def set_max(maximum):
                 download_info["max"] = maximum
                 download_info["files"] += 1
-                print(f"[MAX] {maximum} (arquivo #{download_info['files']})")
                 def update():
                     if hasattr(self, 'prog_bar'):
                         self.prog_bar.config(maximum=maximum)
@@ -475,6 +473,19 @@ class AetherLauncherUI:
                     traceback.print_exc()
                     final_vid = vid
             
+            # Detectar versão do Minecraft para aplicar compatibilidade
+            version_parts = vid.split('.')
+            major = int(version_parts[0]) if len(version_parts) > 0 else 1
+            minor = int(version_parts[1]) if len(version_parts) > 1 else 0
+            patch = int(version_parts[2]) if len(version_parts) > 2 else 0
+            
+            is_old_version = major == 1 and minor < 13  # Versões antes da 1.13
+            is_very_old = major == 1 and minor < 6      # Versões antes da 1.6
+            
+            print(f"\n>>> Versao detectada: {major}.{minor}.{patch}")
+            print(f">>> Versao antiga (< 1.13): {is_old_version}")
+            print(f">>> Versao muito antiga (< 1.6): {is_very_old}")
+            
             # Preparar opções de lançamento
             print(f"\n>>> Preparando para iniciar...")
             set_status("Preparando para iniciar...")
@@ -496,27 +507,83 @@ class AetherLauncherUI:
                 options=options
             )
             
-            # Configurar ambiente Linux
+            # Configurar ambiente Linux com compatibilidade por versão
             env = os.environ.copy()
             
+            # Configurações de compatibilidade
             if p.get("compatibility_mode", True):
-                print(">>> Modo de compatibilidade ativado")
+                print(">>> Aplicando configuracoes de compatibilidade...")
+                
+                # OpenGL/Mesa - essencial para Linux
                 env["MESA_GL_VERSION_OVERRIDE"] = "4.6"
                 env["MESA_GLSL_VERSION_OVERRIDE"] = "460"
-                env["__GLX_VENDOR_LIBRARY_NAME"] = "mesa"
                 
+                # Não forçar mesa em versões novas se tiver placa dedicada
+                if is_old_version:
+                    env["__GLX_VENDOR_LIBRARY_NAME"] = "mesa"
+                
+                # Configurações Java específicas por versão
                 java_opts = [
                     "-Djava.awt.headless=false",
-                    "-Dorg.lwjgl.util.Debug=true"
                 ]
-                env["_JAVA_OPTIONS"] = " ".join(java_opts)
+                
+                # Versões antigas precisam de configurações especiais
+                if is_old_version:
+                    java_opts.extend([
+                        "-Djava.net.preferIPv4Stack=true",
+                        "-Dminecraft.applet.TargetDirectory=" + inst,
+                    ])
+                
+                # Versões muito antigas precisam ignorar certificados SSL
+                if is_very_old:
+                    java_opts.extend([
+                        "-Dhttp.proxyHost=",
+                        "-Dhttp.proxyPort=",
+                        "-Dhttps.proxyHost=",
+                        "-Dhttps.proxyPort=",
+                    ])
+                
+                # LWJGL (biblioteca gráfica) - configurações por versão
+                if is_old_version:
+                    # LWJGL 2.x (versões antigas)
+                    java_opts.extend([
+                        "-Dorg.lwjgl.librarypath=" + os.path.join(self.mc_dir, "versions", vid, vid + "-natives"),
+                        "-Dnet.java.games.input.librarypath=" + os.path.join(self.mc_dir, "versions", vid, vid + "-natives"),
+                    ])
+                else:
+                    # LWJGL 3.x (versões novas)
+                    java_opts.extend([
+                        "-Dorg.lwjgl.util.Debug=false",
+                    ])
+                
+                # Aplicar opções Java
+                if "_JAVA_OPTIONS" in env:
+                    env["_JAVA_OPTIONS"] = env["_JAVA_OPTIONS"] + " " + " ".join(java_opts)
+                else:
+                    env["_JAVA_OPTIONS"] = " ".join(java_opts)
+                
+                print(f"Java options: {env['_JAVA_OPTIONS']}")
             
-            # Paths de bibliotecas
-            lib_paths = ["/usr/lib", "/usr/lib/x86_64-linux-gnu", "/lib/x86_64-linux-gnu"]
+            # Paths de bibliotecas nativas
+            lib_paths = [
+                "/usr/lib",
+                "/usr/lib/x86_64-linux-gnu",
+                "/lib/x86_64-linux-gnu",
+                "/usr/lib64",
+            ]
+            
+            # Adicionar path das natives do Minecraft
+            natives_dir = os.path.join(self.mc_dir, "versions", vid, vid + "-natives")
+            if os.path.exists(natives_dir):
+                lib_paths.insert(0, natives_dir)
+                print(f">>> Adicionado diretorio de natives: {natives_dir}")
+            
             if "LD_LIBRARY_PATH" in env:
                 env["LD_LIBRARY_PATH"] = ":".join(lib_paths) + ":" + env["LD_LIBRARY_PATH"]
             else:
                 env["LD_LIBRARY_PATH"] = ":".join(lib_paths)
+            
+            print(f"LD_LIBRARY_PATH: {env['LD_LIBRARY_PATH'][:200]}...")
             
             set_status("Iniciando Minecraft...")
             
@@ -524,8 +591,11 @@ class AetherLauncherUI:
             print(f"\n{'='*60}")
             print("COMANDO DE EXECUCAO:")
             print(f"{'='*60}")
-            for i, arg in enumerate(cmd):
-                print(f"{i}: {arg}")
+            cmd_str = " ".join(cmd)
+            if len(cmd_str) > 500:
+                print(cmd_str[:500] + "...")
+            else:
+                print(cmd_str)
             print(f"{'='*60}")
             print(f"Diretorio de trabalho: {inst}")
             print(f"Versao final: {final_vid}")
@@ -548,9 +618,16 @@ class AetherLauncherUI:
             # Monitorar saída em tempo real
             def monitor_process():
                 print("=== SAIDA DO MINECRAFT ===\n")
+                error_lines = []
+                
                 for line in iter(process.stdout.readline, ''):
                     if line:
-                        print(f"[MC] {line.rstrip()}")
+                        line_clean = line.rstrip()
+                        print(f"[MC] {line_clean}")
+                        
+                        # Capturar linhas de erro
+                        if "ERROR" in line_clean or "Exception" in line_clean or "error" in line_clean.lower():
+                            error_lines.append(line_clean)
                 
                 process.wait()
                 exit_code = process.returncode
@@ -559,7 +636,16 @@ class AetherLauncherUI:
                 print(f"Codigo de saida: {exit_code}\n")
                 
                 if exit_code != 0:
-                    error_msg = f"Minecraft encerrou com codigo de erro: {exit_code}\n\nVerifique o console para mais detalhes."
+                    error_msg = f"Minecraft encerrou com codigo de erro: {exit_code}"
+                    
+                    if error_lines:
+                        print("\n=== ERROS CAPTURADOS ===")
+                        for err in error_lines[-5:]:  # Últimas 5 linhas de erro
+                            print(err)
+                        print("========================\n")
+                        error_msg += f"\n\nUltimo erro:\n{error_lines[-1][:200]}"
+                    
+                    error_msg += "\n\nVerifique o console para detalhes completos."
                     self.root.after(0, lambda: messagebox.showerror("Erro", error_msg))
             
             threading.Thread(target=monitor_process, daemon=True).start()
