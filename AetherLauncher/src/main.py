@@ -785,10 +785,13 @@ class AetherLauncherUI:
                                 "--add-opens", "java.base/java.util.concurrent=ALL-UNNAMED",
                                 "--add-opens", "java.base/sun.nio.ch=ALL-UNNAMED",
                                 "--add-opens", "java.base/java.nio=ALL-UNNAMED",
+                                "--add-opens", "java.management/java.lang.management=ALL-UNNAMED",
+                                "--add-opens", "java.management/sun.management=ALL-UNNAMED",
                                 "-Dio.netty.tryReflectionSetAccessible=true",
-                                "-Dno_jtracy=true", # Desativar Jtracy se causar crash em drivers antigos
-                                "-Dlog4j2.disable.jmx=true", # CORREÇÃO CRÍTICA: Evita NoClassDefFoundError no ManagementFactory
-                                "-Dlog4j2.formatMsgNoLookups=true"
+                                "-Dno_jtracy=true",
+                                "-Dlog4j2.disable.jmx=true",
+                                "-Dlog4j2.formatMsgNoLookups=true",
+                                "-Djava.util.logging.manager=org.apache.logging.log4j.jul.LogManager"
                             ])
                         elif "-XX:MaxTenuringThreshold=1" in java_opts:
                             java_opts.remove("-XX:MaxTenuringThreshold=1")
