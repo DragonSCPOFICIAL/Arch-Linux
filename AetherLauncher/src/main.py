@@ -604,12 +604,14 @@ class AetherLauncherUI:
             except:
                 major, minor = 1, 0
             
+            is_v21 = (major > 1) or (major == 1 and minor >= 21)
             is_recent = (major > 1) or (major == 1 and minor >= 17)
             is_legacy = major == 1 and minor < 13  # Versões antigas
             is_very_old = major == 1 and minor < 6  # Versões muito antigas
             is_ancient = major == 1 and minor < 3   # Versões ancestrais
             
             print(f"\n>>> Classificacao da versao:")
+            print(f"    - Minecraft 1.21+: {is_v21}")
             print(f"    - Recente (1.17+): {is_recent}")
             print(f"    - Ancestral (< 1.3): {is_ancient}")
             print(f"    - Muito antiga (< 1.6): {is_very_old}")
@@ -670,7 +672,7 @@ class AetherLauncherUI:
                 if self.data.get("use_aikar", True):
                     java_opts.extend(utils.get_performance_args())
                 
-                # Forçar aceleração e compatibilidade de módulos Java 17+
+                # Forçar aceleração e compatibilidade de módulos Java 17/21+
                 java_opts.extend([
                     "-Dsun.java2d.opengl=true",
                     "-Dorg.lwjgl.util.NoChecks=true",
@@ -679,8 +681,14 @@ class AetherLauncherUI:
                     "--add-modules", "java.base,java.desktop",
                     "--add-opens", "java.base/java.lang=ALL-UNNAMED",
                     "--add-opens", "java.base/java.util=ALL-UNNAMED",
-                    "--add-opens", "java.base/java.io=ALL-UNNAMED"
+                    "--add-opens", "java.base/java.io=ALL-UNNAMED",
+                    "--add-opens", "java.desktop/sun.awt=ALL-UNNAMED",
+                    "--add-opens", "java.desktop/sun.java2d=ALL-UNNAMED"
                 ])
+                
+                # Flag específica para 1.21+ se estiver dando erro de inicialização
+                if is_v21:
+                    java_opts.append("-Djava.awt.headless=false")
                 
                 if is_legacy:
                     java_opts.extend([

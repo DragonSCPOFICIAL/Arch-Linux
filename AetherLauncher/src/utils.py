@@ -135,17 +135,17 @@ def get_instance_path(base_dir, profile_name):
 def get_java_recommendation(version_id):
     """Recomenda a versão do Java baseada na versão do Minecraft."""
     try:
+        # 1.21.x -> minor é 21
         parts = version_id.split('.')
-        if len(parts) < 2: return "java-runtime-gamma" # 17+
+        minor = 0
+        if len(parts) >= 2:
+            minor = int(parts[1])
         
-        minor = int(parts[1])
         if minor >= 21:
-            return "java-runtime-delta" # Java 21
+            return "java-runtime-delta" # Java 21 (Obrigatório para 1.21+)
         elif minor >= 17:
             return "java-runtime-gamma" # Java 17
-        elif minor >= 16:
-            return "java-runtime-alpha" # Java 16
         else:
-            return "java-runtime-alpha" # Java 8/11 (Mesa runtime costuma agrupar)
+            return "java-runtime-alpha" # Java 8
     except:
-        return "java-runtime-gamma"
+        return "java-runtime-delta" # Seguro para versões novas
