@@ -15,7 +15,7 @@ ssl._create_default_https_context = ssl._create_unverified_context
 class AetherLauncherUI:
     def __init__(self, root):
         self.root = root
-        self.root.title("Aether Launcher v5.1.0-STABLE - Minecraft Elite Linux (Nativo)")
+        self.root.title("Aether Launcher v4.8.6-ULTIMATE - Minecraft Elite Linux (Nativo)")
         
         # Configuração de Janela
         window_width, window_height = 1050, 680
@@ -95,8 +95,7 @@ class AetherLauncherUI:
         try:
             versions = minecraft_launcher_lib.utils.get_version_list()
             # Ordenar versões para que as mais novas apareçam primeiro
-            # REMOÇÃO: Versão 1.21.11 deletada por instabilidade técnica
-            releases = [v['id'] for v in versions if v['type'] == 'release' and v['id'] != "1.21.11"]
+            releases = [v['id'] for v in versions if v['type'] == 'release']
             self.mc_versions = releases
         except Exception as e:
             print(f"Erro ao buscar versões: {e}")
@@ -702,8 +701,7 @@ class AetherLauncherUI:
                 print(f">>> Usando Java: {java_executable}")
             
             # Obter comando de lançamento
-            print(f">>> Gerando comando de execucao para: {final_vid}")
-            # IMPORTANTE: Usar final_vid para garantir que Forge/Fabric sejam carregados
+            print(f">>> Gerando comando de execucao...")
             cmd = minecraft_launcher_lib.command.get_minecraft_command(
                 version=final_vid,
                 minecraft_directory=self.mc_dir,
@@ -763,28 +761,52 @@ class AetherLauncherUI:
                             "--add-opens", "java.base/sun.security.util=ALL-UNNAMED",
                             "--add-opens", "java.base/java.security=ALL-UNNAMED"
                         ])
-                        # Restaurar flags de compatibilidade para Java 21 (1.21.x)
-                        # Isso garante que a 1.21.10 e outras versões modernas funcionem sem travar
-                        java_opts.extend([
-                            "--add-modules", "java.management,java.base,java.desktop,jdk.unsupported",
-                            "--add-opens", "java.base/java.lang=ALL-UNNAMED",
-                            "--add-opens", "java.base/java.lang.reflect=ALL-UNNAMED",
-                            "--add-opens", "java.base/java.util=ALL-UNNAMED",
-                            "--add-opens", "java.base/java.util.concurrent=ALL-UNNAMED",
-                            "--add-opens", "java.base/java.io=ALL-UNNAMED",
-                            "--add-opens", "java.base/java.net=ALL-UNNAMED",
-                            "--add-opens", "java.base/java.nio=ALL-UNNAMED",
-                            "--add-opens", "java.base/sun.nio.ch=ALL-UNNAMED",
-                            "--add-opens", "java.management/java.lang.management=ALL-UNNAMED",
-                            "--add-opens", "java.management/sun.management=ALL-UNNAMED",
-                            "--add-opens", "java.desktop/sun.awt=ALL-UNNAMED",
-                            "--add-opens", "jdk.unsupported/sun.misc=ALL-UNNAMED",
-                            "-Djna.nosys=true",
-                            "-Dlog4j2.disable.jmx=true",
-                            "-Dlog4j2.formatMsgNoLookups=true"
-                        ])
-                        
-                        if "-XX:MaxTenuringThreshold=1" in java_opts:
+                        # Correção Crítica para 1.21.11+: Conflito de Bibliotecas Nativas (JNA/Netty)
+                        # Versões 1.21.11+ atualizaram bibliotecas que crasham com certas Aikar's Flags no Linux
+                        if vid == "1.21.11":
+                            set_status("Aplicando Patch Ultimate (1.21.11)...")
+                            print(">>> Aplicando Hotfix ULTIMATE para 1.21.11: Desbloqueio Total de Modulos")
+                            
+                            # Limpeza agressiva de flags que conflitam com o novo coletor de lixo e bibliotecas nativas
+                            problematic_flags = [
+                                "-XX:MaxTenuringThreshold=1",
+                                "-XX:G1MixedGCLiveThresholdPercent=90",
+                                "-XX:+AlwaysPreTouch",
+                                "-XX:+PerfDisableSharedMem"
+                            ]
+                            for flag in problematic_flags:
+                                if flag in java_opts: java_opts.remove(flag)
+                            
+                            # Pacote de Compatibilidade ULTIMATE para Java 21 + Netty 4.2.7 + JNA 5.17.0
+                            java_opts.extend([
+                                # Desbloqueio de Modulos (Essencial para NoClassDefFoundError e Reflection)
+                                "--add-modules", "java.management,java.base,java.desktop,jdk.unsupported",
+                                "--add-opens", "java.base/java.lang=ALL-UNNAMED",
+                                "--add-opens", "java.base/java.lang.reflect=ALL-UNNAMED",
+                                "--add-opens", "java.base/java.util=ALL-UNNAMED",
+                                "--add-opens", "java.base/java.util.concurrent=ALL-UNNAMED",
+                                "--add-opens", "java.base/java.io=ALL-UNNAMED",
+                                "--add-opens", "java.base/java.net=ALL-UNNAMED",
+                                "--add-opens", "java.base/java.nio=ALL-UNNAMED",
+                                "--add-opens", "java.base/sun.nio.ch=ALL-UNNAMED",
+                                "--add-opens", "java.management/java.lang.management=ALL-UNNAMED",
+                                "--add-opens", "java.management/sun.management=ALL-UNNAMED",
+                                "--add-opens", "java.desktop/sun.awt=ALL-UNNAMED",
+                                "--add-opens", "jdk.unsupported/sun.misc=ALL-UNNAMED",
+                                
+                                # Correcoes de Bibliotecas Nativas
+                                "-Djna.nosys=true",
+                                "-Djna.nounpack=true",
+                                "-Dio.netty.tryReflectionSetAccessible=true",
+                                "-Dio.netty.noUnsafe=false",
+                                
+                                # Correcoes de Log e Telemetria
+                                "-Dlog4j2.disable.jmx=true",
+                                "-Dlog4j2.formatMsgNoLookups=true",
+                                "-Dno_jtracy=true",
+                                "-Djava.util.logging.manager=org.apache.logging.log4j.jul.LogManager"
+                            ])
+                        elif "-XX:MaxTenuringThreshold=1" in java_opts:
                             java_opts.remove("-XX:MaxTenuringThreshold=1")
                 
                 # Flags para Eras Antigas (Legado e Ancestral)

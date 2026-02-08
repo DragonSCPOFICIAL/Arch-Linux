@@ -1,5 +1,5 @@
 {
-  "version": "5.1.0-STABLE",
+  "version": "4.8.6-ULTIMATE",
   "build": 12,
   "release_date": "2026-02-08",
   "update_check_url": "https://raw.githubusercontent.com/DragonSCPOFICIAL/Arch-Linux/main/AetherLauncher/version.json",
@@ -10,11 +10,10 @@
     "JVM: Adicionadas flags de desbloqueio de módulos para Java 21+",
     "Lógica: Launcher agora prioriza perfil manual quando Auto-Tune está desligado",
     "Estabilidade: Injeção de flags JNA para evitar conflitos com bibliotecas do sistema",
-    "Feature: Reconstrução da lógica de Mod Loaders (Forge/Fabric)",
-    "Fix: Garantido que o comando de inicialização use o ID correto do Mod Loader",
-    "Cleanup: Versão 1.21.11 deletada permanentemente do launcher",
-    "Stability: Restaurada compatibilidade total com 1.21.10 e versões Java 21",
-    "Fix: Reativadas flags de desbloqueio de módulos para estabilidade de mods"
+    "Fix: Hotfix definitivo para Minecraft 1.21.11 (Netty 4.2.7 & Jtracy Patch)",
+    "Fix: Resolvido NoClassDefFoundError (JMX/Log4j) na inicialização da 1.21.11",
+    "Fix: Forçado desbloqueio de módulos java.management para compatibilidade total",
+    "Fix: Patch ULTIMATE para 1.21.11 (Desbloqueio total de módulos Java 21 e Netty 4.2.7)"
   ],
   "download_url": "https://raw.githubusercontent.com/DragonSCPOFICIAL/Arch-Linux/main/AetherLauncher/",
   "min_version": "4.0.0"
