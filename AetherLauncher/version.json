@@ -1,5 +1,5 @@
 {
-  "version": "4.9.0-MODS",
+  "version": "5.0.0-CLEAN",
   "build": 12,
   "release_date": "2026-02-08",
   "update_check_url": "https://raw.githubusercontent.com/DragonSCPOFICIAL/Arch-Linux/main/AetherLauncher/version.json",
@@ -12,7 +12,7 @@
     "Estabilidade: Injeção de flags JNA para evitar conflitos com bibliotecas do sistema",
     "Feature: Reconstrução da lógica de Mod Loaders (Forge/Fabric)",
     "Fix: Garantido que o comando de inicialização use o ID correto do Mod Loader",
-    "Cleanup: Removidas correções experimentais da versão 1.21.11",
+    "Cleanup: Versão 1.21.11 deletada permanentemente do launcher",
     "Stability: Foco em compatibilidade total com versões estáveis e mods"
   ],
   "download_url": "https://raw.githubusercontent.com/DragonSCPOFICIAL/Arch-Linux/main/AetherLauncher/",

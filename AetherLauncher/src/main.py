@@ -15,7 +15,7 @@ ssl._create_default_https_context = ssl._create_unverified_context
 class AetherLauncherUI:
     def __init__(self, root):
         self.root = root
-        self.root.title("Aether Launcher v4.9.0-MODS - Minecraft Elite Linux (Nativo)")
+        self.root.title("Aether Launcher v5.0.0-CLEAN - Minecraft Elite Linux (Nativo)")
         
         # Configuração de Janela
         window_width, window_height = 1050, 680
@@ -95,7 +95,8 @@ class AetherLauncherUI:
         try:
             versions = minecraft_launcher_lib.utils.get_version_list()
             # Ordenar versões para que as mais novas apareçam primeiro
-            releases = [v['id'] for v in versions if v['type'] == 'release']
+            # REMOÇÃO: Versão 1.21.11 deletada por instabilidade técnica
+            releases = [v['id'] for v in versions if v['type'] == 'release' and v['id'] != "1.21.11"]
             self.mc_versions = releases
         except Exception as e:
             print(f"Erro ao buscar versões: {e}")
