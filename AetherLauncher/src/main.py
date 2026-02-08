@@ -661,16 +661,22 @@ class AetherLauncherUI:
                 
                 # Flags Específicas para Eras Modernas (Java 17/21+)
                 if era in ["v21", "modern"]:
+                    # Suavizar flags para evitar Código 1
                     java_opts.extend([
                         "--add-modules", "java.base,java.desktop",
                         "--add-opens", "java.base/java.lang=ALL-UNNAMED",
                         "--add-opens", "java.base/java.util=ALL-UNNAMED",
                         "--add-opens", "java.base/java.io=ALL-UNNAMED",
                         "--add-opens", "java.desktop/sun.awt=ALL-UNNAMED",
-                        "--add-opens", "java.desktop/sun.java2d=ALL-UNNAMED"
+                        "--add-opens", "java.desktop/sun.java2d=ALL-UNNAMED",
+                        "-Dorg.lwjgl.util.NoChecks=true",
+                        "-Dorg.lwjgl.util.Debug=false"
                     ])
                     if era == "v21":
                         java_opts.append("-Djava.awt.headless=false")
+                        # Remover flags de performance se estiverem causando conflito na 1.21
+                        if "-XX:MaxTenuringThreshold=1" in java_opts:
+                            java_opts.remove("-XX:MaxTenuringThreshold=1")
                 
                 # Flags para Eras Antigas (Legado e Ancestral)
                 if era in ["legacy", "ancient"]:
@@ -725,9 +731,11 @@ class AetherLauncherUI:
             import time
             time.sleep(1)
             if process.poll() is not None:
-                # O processo morreu rápido, tentar modo de compatibilidade extrema
-                print(">>> Crash detectado. Tentando modo de compatibilidade extrema...")
-                env["LIBGL_ALWAYS_SOFTWARE"] = "1"
+                # O processo morreu rápido, tentar modo de compatibilidade sem flags agressivas
+                print(">>> Crash detectado (Código 1). Tentando modo de segurança...")
+                # Tenta rodar sem as _JAVA_OPTIONS se falhar
+                if "_JAVA_OPTIONS" in env:
+                    del env["_JAVA_OPTIONS"]
                 process = subprocess.Popen(final_cmd, env=env, cwd=inst, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1)
             
             print(f">>> Processo iniciado! PID: {process.pid}\n")
