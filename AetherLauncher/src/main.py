@@ -670,7 +670,13 @@ class AetherLauncherUI:
                 if self.data.get("use_aikar", True):
                     java_opts.extend(utils.get_performance_args())
                 
-                java_opts.append("-Dsun.java2d.opengl=true")
+                # Forçar aceleração e desativar verificações que causam crash no Linux
+                java_opts.extend([
+                    "-Dsun.java2d.opengl=true",
+                    "-Dorg.lwjgl.util.NoChecks=true",
+                    "-Dorg.lwjgl.librarypath=/usr/lib/x86_64-linux-gnu",
+                    "-Djava.net.preferIPv4Stack=true"
+                ])
                 
                 if is_legacy:
                     java_opts.extend([
@@ -719,12 +725,16 @@ class AetherLauncherUI:
             print(f"{'='*60}\n")
             
             # Iniciar processo
+            # Adicionar flag para ignorar erros de inicialização de classes se necessário
             final_cmd = cmd
+            
+            # Aplicar prioridade se configurado
             if self.data.get("use_high_priority", True):
                 print(">>> Iniciando com Alta Prioridade (Nice/Ionice)...")
-                final_cmd = ["nice", "-n", "-10"] + cmd
+                # Usar nice 0 se -10 falhar por permissão
+                final_cmd = ["nice", "-n", "0"] + cmd
                 try:
-                    final_cmd = ["ionice", "-c", "2", "-n", "0"] + final_cmd
+                    final_cmd = ["ionice", "-c", "2", "-n", "4"] + final_cmd
                 except: pass
 
             process = subprocess.Popen(

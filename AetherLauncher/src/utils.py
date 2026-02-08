@@ -71,14 +71,18 @@ def get_compatibility_env(is_recent=True):
     env["_JAVA_AWT_WM_NONREPARENTING"] = "1"
     
     # Prioriza bibliotecas do sistema para evitar conflitos com natives do MC
+    # No Linux, o erro ExceptionInInitializerError costuma ser falta de bibliotecas X11 ou OpenGL
     lib_paths = [
-        "/usr/lib/x86_64-linux-gnu/dri",
         "/usr/lib/x86_64-linux-gnu",
+        "/usr/lib/x86_64-linux-gnu/dri",
         "/usr/lib64",
         "/usr/lib",
-        "/lib/x86_64-linux-gnu"
+        "/lib/x86_64-linux-gnu",
+        "/usr/local/lib"
     ]
-    env["LD_LIBRARY_PATH"] = ":".join(lib_paths) + (":" + env.get("LD_LIBRARY_PATH", "") if env.get("LD_LIBRARY_PATH") else "")
+    # Adicionar bibliotecas nativas primeiro para garantir que o LWJGL use as do sistema
+    env["LD_LIBRARY_PATH"] = ":".join(lib_paths)
+    env["LD_PRELOAD"] = "" # Limpa preloads que possam causar conflito
     
     return env
 
