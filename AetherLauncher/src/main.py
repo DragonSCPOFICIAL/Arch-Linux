@@ -343,6 +343,18 @@ class AetherLauncherUI:
         self.perf_vars["use_autotune"] = tk.BooleanVar(value=self.data.get("use_autotune", True))
         tk.Checkbutton(f_perf, text="Auto-Tune Inteligente (Testar e selecionar melhor driver)", variable=self.perf_vars["use_autotune"], bg="#1a1a1a", fg="white", selectcolor="#333", activebackground="#1a1a1a").pack(anchor="w", pady=5)
 
+        # --- ABA PERSONALIZAÇÃO ---
+        f_custom = tk.Frame(nb, bg="#1a1a1a", padx=20, pady=20)
+        nb.add(f_custom, text=" Personalização ")
+        
+        tk.Label(f_custom, text="TEMA DO LAUNCHER", font=("Segoe UI", 10, "bold"), bg="#1a1a1a", fg=self.colors["accent"]).pack(anchor="w", pady=(0, 10))
+        
+        self.themes = utils.get_themes()
+        self.theme_var = tk.StringVar(value=self.data.get("theme_name", "Aether (Padrão)"))
+        
+        for t_name in self.themes.keys():
+            tk.Radiobutton(f_custom, text=t_name, variable=self.theme_var, value=t_name, bg="#1a1a1a", fg="white", selectcolor="#333", activebackground="#1a1a1a").pack(anchor="w", pady=2)
+
         # Botões de Ação
         btn_frame = tk.Frame(self.active_content_frame, bg="#1a1a1a")
         btn_frame.pack(pady=20)
@@ -355,9 +367,16 @@ class AetherLauncherUI:
             self.data["ram_mb"] = e_ram.get()
             for k, v in self.perf_vars.items(): self.data[k] = v.get()
             
+            # Aplicar Tema
+            selected_theme = self.theme_var.get()
+            self.data["theme_name"] = selected_theme
+            theme_colors = self.themes[selected_theme]
+            self.colors["accent"] = theme_colors["accent"]
+            
             self.canvas.itemconfig(self.nick_display, text=self.username)
             self.update_avatar_display()
             self.save_launcher_data()
+            # Reiniciar interface para aplicar cores
             self.show_home()
             
         tk.Button(btn_frame, text="SALVAR TUDO", bg=self.colors["accent"], fg="white", bd=0, font=("Segoe UI", 10, "bold"), padx=30, pady=10, command=save).pack(side="left", padx=10)

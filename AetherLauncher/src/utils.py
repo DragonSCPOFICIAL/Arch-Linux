@@ -42,6 +42,16 @@ def get_gpu_info():
     info = get_system_info()
     return f"GPU: {info['gpu_vendor'].upper()} | RAM: {info['ram_gb']}GB | Cores: {info['cpu_cores']}"
 
+def get_themes():
+    """Retorna os temas de cores disponíveis para o launcher."""
+    return {
+        "Aether (Padrão)": {"accent": "#00aaff", "bg": "#1a1a1a", "fg": "white"},
+        "Dracula": {"accent": "#bd93f9", "bg": "#282a36", "fg": "#f8f8f2"},
+        "Emerald": {"accent": "#50fa7b", "bg": "#1a1a1a", "fg": "white"},
+        "Inferno": {"accent": "#ff5555", "bg": "#1a1a1a", "fg": "white"},
+        "Cyberpunk": {"accent": "#f1fa8c", "bg": "#282a36", "fg": "#ff79c6"}
+    }
+
 def get_autotune_profiles():
     """Retorna os perfis de driver para o sistema de Auto-Tune."""
     return [
