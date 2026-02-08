@@ -36,8 +36,14 @@ def get_compatibility_env(is_recent=True):
     env["MESA_LOADER_DRIVER_OVERRIDE"] = "zink"
     env["GALLIUM_DRIVER"] = "zink"
     
-    # Desabilita sincronização vertical para ganhar FPS em hardware modesto
+    # Desabilita sincronização vertical para ganhar FPS e reduzir input lag
     env["vblank_mode"] = "0"
+    env["__GL_SYNC_TO_VBLANK"] = "0"
+    
+    # Otimizações de Memória e Driver
+    env["MESA_DEBUG"] = "silent"
+    env["allow_glsl_extension_directive_mid_shader"] = "true"
+    env["pre_shader_compiler"] = "true"
     
     # Corrige problemas de interface em algumas distros
     env["_JAVA_AWT_WM_NONREPARENTING"] = "1"
@@ -53,6 +59,31 @@ def get_compatibility_env(is_recent=True):
     env["LD_LIBRARY_PATH"] = ":".join(lib_paths) + (":" + env.get("LD_LIBRARY_PATH", "") if env.get("LD_LIBRARY_PATH") else "")
     
     return env
+
+def get_performance_args():
+    """Retorna argumentos de JVM de alta performance (Aikar's Flags otimizadas para cliente)."""
+    return [
+        "-XX:+UseG1GC",
+        "-XX:+ParallelRefProcEnabled",
+        "-XX:MaxGCPauseMillis=200",
+        "-XX:+UnlockExperimentalVMOptions",
+        "-XX:+DisableExplicitGC",
+        "-XX:+AlwaysPreTouch",
+        "-XX:G1NewSizePercent=30",
+        "-XX:G1MaxNewSizePercent=40",
+        "-XX:G1HeapRegionSize=8M",
+        "-XX:G1ReservePercent=20",
+        "-XX:G1HeapWastePercent=5",
+        "-XX:G1MixedGCCountTarget=4",
+        "-XX:InitiatingHeapOccupancyPercent=15",
+        "-XX:G1MixedGCLiveThresholdPercent=90",
+        "-XX:G1RSetUpdatingPauseTimePercent=5",
+        "-XX:SurvivorRatio=32",
+        "-XX:+PerfDisableSharedMem",
+        "-XX:MaxTenuringThreshold=1",
+        "-Dusing.aikars.flags=https://mcflags.emc.gs",
+        "-Daikars.new.flags=true"
+    ]
 
 def get_instance_path(base_dir, profile_name):
     """Cria e retorna o caminho isolado para uma instância, garantindo estrutura completa."""

@@ -634,18 +634,14 @@ class AetherLauncherUI:
                 # Java options baseadas na versão
                 java_opts = []
                 
-                # Otimizações para Linux e hardware modesto
-                java_opts.extend([
-                    "-Xmx4G", 
-                    "-Xms1G",
-                    "-XX:+UnlockExperimentalVMOptions",
-                    "-XX:+UseG1GC",
-                    "-XX:G1NewSizePercent=20",
-                    "-XX:G1ReservePercent=20",
-                    "-XX:MaxGCPauseMillis=50",
-                    "-XX:G1HeapRegionSize=32M",
-                    "-Dsun.java2d.opengl=true",
-                ])
+                # Otimizações de Memória
+                java_opts.extend(["-Xmx4G", "-Xms2G"])
+                
+                # Integrar Flags de Performance Extrema (Aikar's Flags)
+                java_opts.extend(utils.get_performance_args())
+                
+                # Forçar aceleração de hardware no Java
+                java_opts.append("-Dsun.java2d.opengl=true")
                 
                 if is_legacy:
                     java_opts.extend([
@@ -693,10 +689,18 @@ class AetherLauncherUI:
             print(f"Java: {java_executable if java_executable else 'sistema'}")
             print(f"{'='*60}\n")
             
-            # Iniciar processo
-            print(">>> Iniciando processo do Minecraft...")
+            # Iniciar processo com Alta Prioridade (Nativo Linux)
+            print(">>> Iniciando processo do Minecraft com Alta Prioridade...")
+            
+            # Tentar usar 'nice' para dar prioridade de CPU e 'ionice' para prioridade de disco
+            final_cmd = ["nice", "-n", "-10"] + cmd
+            try:
+                # Tenta ionice para prioridade de disco (pode precisar de permissão, mas não falha o comando se não tiver)
+                final_cmd = ["ionice", "-c", "2", "-n", "0"] + final_cmd
+            except: pass
+
             process = subprocess.Popen(
-                cmd,
+                final_cmd,
                 env=env,
                 cwd=inst,
                 stdout=subprocess.PIPE,
