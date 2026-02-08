@@ -11,29 +11,21 @@ O **Aether Launcher** é um inicializador de Minecraft otimizado especificamente
 
 ## 🚀 Instalação Rápida (Comando Único)
 
-Para instalar o Aether Launcher agora mesmo, copie e cole o comando abaixo no seu terminal:
+Para instalar ou atualizar para a versão mais recente, utilize o comando abaixo. Ele limpa qualquer rastro de instalações anteriores para evitar erros:
 
 ```bash
-git clone https://github.com/DragonSCPOFICIAL/Arch-Linux.git && cd Arch-Linux/AetherLauncher && sudo bash install_arch.sh
+sudo rm -rf Arch-Linux && git clone https://github.com/DragonSCPOFICIAL/Arch-Linux.git && cd Arch-Linux/AetherLauncher && sudo bash install_arch.sh
 ```
 
 > **Nota**: Após a instalação, você pode abrir o launcher pelo menu de aplicativos ou digitando `aetherlauncher` no terminal.
 
 ## 🗑️ Desinstalação Completa
 
-Escolha uma das formas abaixo para remover o launcher do seu sistema:
-
-### 💻 Via Terminal (Comando Único)
-Este comando remove o launcher, os links do sistema e os atalhos automaticamente:
+Este comando remove o launcher, todos os dados do Minecraft, configurações e atalhos do sistema de forma definitiva:
 
 ```bash
-sudo bash /opt/aetherlauncher/uninstall.sh --auto
+sudo bash /opt/aetherlauncher/uninstall.sh
 ```
-
-### 🖱️ Via Interface
-1. Abra o **Aether Launcher**.
-2. Vá até a aba **AJUSTES**.
-3. Na seção **Zona de Perigo**, clique em **DESINSTALAR AETHER LAUNCHER**.
 
 ---
 
