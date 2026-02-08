@@ -1,0 +1,13 @@
+# BRX AI - Dependências Python
+# Instale com: pip install -r requirements.txt
+
+# Core
+psutil>=5.9.0          # Monitoramento de sistema
+Pillow>=9.0.0          # Processamento de imagens
+requests>=2.28.0       # Requisições HTTP
+
+# Opcional para futuras integrações
+# openai>=0.27.0        # Integração com OpenAI
+# anthropic>=0.3.0      # Integração com Claude
+# pyautogui>=0.9.53     # Automação de mouse/teclado
+# pynput>=1.7.6         # Captura de entrada
