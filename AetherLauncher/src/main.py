@@ -29,31 +29,30 @@ class AetherLauncherUI:
             "text_dim": "#8B949E"
         }
         
-        # Caminhos Linux
-        self.base_dir = os.path.expanduser("~/.aetherlauncher")
-        self.minecraft_dir = os.path.join(self.base_dir, "minecraft")
-        self.versions_dir = os.path.join(self.minecraft_dir, "versions")
-        self.libraries_dir = os.path.join(self.minecraft_dir, "libraries")
-        self.assets_dir = os.path.join(self.minecraft_dir, "assets")
-        self.natives_dir = os.path.join(self.minecraft_dir, "natives")
-        
-        # Config
+        # Config Base
         self.config_dir = os.path.expanduser("~/.config/aetherlauncher")
         self.profiles_file = os.path.join(self.config_dir, "profiles.json")
+        os.makedirs(self.config_dir, exist_ok=True)
         
-        # Criar diretórios
-        for directory in [self.base_dir, self.minecraft_dir, self.versions_dir, 
-                         self.libraries_dir, self.assets_dir, self.natives_dir, self.config_dir]:
-            os.makedirs(directory, exist_ok=True)
+        # Carregar Configurações antes de definir caminhos
+        self.settings = self.load_settings_data()
         
-        # Versões disponíveis
-        self.available_versions = {
-            "1.20.1": "https://piston-data.mojang.com/v1/objects/0c3ec587af28e5a785c0b4a7b8a30f9a8f78f838/client.jar",
-            "1.19.4": "https://piston-data.mojang.com/v1/objects/958928a560c9167687bea0cefeb7375da1e552a8/client.jar",
-            "1.18.2": "https://piston-data.mojang.com/v1/objects/2e9a3e3107cca00d6bc9c97bf7d149cae163ef21/client.jar",
-            "1.16.5": "https://piston-data.mojang.com/v1/objects/37fd3c903861eeff3bc24b71eed48f828b5269c8/client.jar",
-            "1.8.9": "https://launcher.mojang.com/v1/objects/3870888a6c3d349d3771a3e9d16c9bf5e076b908/client.jar"
+        # Caminhos Dinâmicos
+        self.base_dir = self.settings.get("base_dir", os.path.expanduser("~/.aetherlauncher"))
+        self.update_paths()
+        
+        # Criar diretórios iniciais
+        self.ensure_directories()
+        
+        # Versões disponíveis e tipos
+        self.version_data = {
+            "1.20.1": {"url": "https://piston-data.mojang.com/v1/objects/0c3ec587af28e5a785c0b4a7b8a30f9a8f78f838/client.jar", "type": "Vanilla"},
+            "1.19.4": {"url": "https://piston-data.mojang.com/v1/objects/958928a560c9167687bea0cefeb7375da1e552a8/client.jar", "type": "Vanilla"},
+            "1.18.2": {"url": "https://piston-data.mojang.com/v1/objects/2e9a3e3107cca00d6bc9c97bf7d149cae163ef21/client.jar", "type": "Vanilla"},
+            "1.16.5": {"url": "https://piston-data.mojang.com/v1/objects/37fd3c903861eeff3bc24b71eed48f828b5269c8/client.jar", "type": "Vanilla"},
+            "1.8.9": {"url": "https://launcher.mojang.com/v1/objects/3870888a6c3d349d3771a3e9d16c9bf5e076b908/client.jar", "type": "Vanilla"}
         }
+        self.available_versions = {k: v["url"] for k, v in self.version_data.items()}
         
         self.downloading = False
         self.selected_version = "1.20.1"
@@ -217,10 +216,22 @@ class AetherLauncherUI:
         settings_card = tk.Frame(container, bg=self.colors["card"], padx=30, pady=30)
         settings_card.pack(fill="x", pady=10)
         
+        # RAM
         tk.Label(settings_card, text="MEMÓRIA RAM (MB):", bg=self.colors["card"], fg=self.colors["accent"], font=("Segoe UI", 10, "bold")).pack(anchor="w")
         self.ram_entry = tk.Entry(settings_card, bg="#262B40", fg="white", insertbackground="white", bd=0, font=("Segoe UI", 12))
-        self.ram_entry.pack(fill="x", pady=(5, 20), ipady=8)
-        self.ram_entry.insert(0, "2048")
+        self.ram_entry.pack(fill="x", pady=(5, 15), ipady=8)
+        self.ram_entry.insert(0, self.settings.get("ram", "2048"))
+        
+        # Diretório do Jogo
+        tk.Label(settings_card, text="DIRETÓRIO DO JOGO:", bg=self.colors["card"], fg=self.colors["accent"], font=("Segoe UI", 10, "bold")).pack(anchor="w")
+        dir_frame = tk.Frame(settings_card, bg=self.colors["card"])
+        dir_frame.pack(fill="x", pady=(5, 20))
+        
+        self.dir_entry = tk.Entry(dir_frame, bg="#262B40", fg="white", insertbackground="white", bd=0, font=("Segoe UI", 10))
+        self.dir_entry.pack(side="left", fill="x", expand=True, ipady=8)
+        self.dir_entry.insert(0, self.base_dir)
+        
+        tk.Button(dir_frame, text="PROCURAR", font=("Segoe UI", 9, "bold"), bg="#3E445E", fg="white", bd=0, cursor="hand2", command=self.browse_directory, padx=15).pack(side="right", padx=(10, 0), ipady=5)
         
         tk.Button(settings_card, text="SALVAR CONFIGURAÇÕES", font=("Segoe UI", 12, "bold"), bg=self.colors["accent"], fg="white", bd=0, cursor="hand2", command=self.save_settings).pack(fill="x", ipady=10)
         
@@ -286,8 +297,51 @@ class AetherLauncherUI:
         except Exception as e:
             print(f"Erro ao salvar perfil: {e}")
 
-    def save_settings(self): 
-        messagebox.showinfo("Aether", "Configurações salvas com sucesso!")
+    def update_paths(self):
+        self.minecraft_dir = os.path.join(self.base_dir, "minecraft")
+        self.versions_dir = os.path.join(self.minecraft_dir, "versions")
+        self.libraries_dir = os.path.join(self.minecraft_dir, "libraries")
+        self.assets_dir = os.path.join(self.minecraft_dir, "assets")
+        self.natives_dir = os.path.join(self.minecraft_dir, "natives")
+
+    def ensure_directories(self):
+        for directory in [self.base_dir, self.minecraft_dir, self.versions_dir, 
+                         self.libraries_dir, self.assets_dir, self.natives_dir]:
+            os.makedirs(directory, exist_ok=True)
+
+    def browse_directory(self):
+        directory = filedialog.askdirectory(initialdir=self.base_dir, title="Selecionar Pasta do Jogo")
+        if directory:
+            self.dir_entry.delete(0, tk.END)
+            self.dir_entry.insert(0, directory)
+
+    def load_settings_data(self):
+        if os.path.exists(self.profiles_file):
+            try:
+                with open(self.profiles_file, 'r') as f:
+                    return json.load(f)
+            except: return {}
+        return {}
+
+    def save_settings(self):
+        new_dir = self.dir_entry.get()
+        new_ram = self.ram_entry.get()
+        
+        self.settings["base_dir"] = new_dir
+        self.settings["ram"] = new_ram
+        self.settings["username"] = self.user_entry.get() if hasattr(self, 'user_entry') else self.settings.get("username", "Player")
+        
+        try:
+            with open(self.profiles_file, 'w') as f:
+                json.dump(self.settings, f, indent=4)
+            
+            self.base_dir = new_dir
+            self.update_paths()
+            self.ensure_directories()
+            
+            messagebox.showinfo("Aether", "Configurações salvas com sucesso!\n\nAs pastas do jogo foram atualizadas.")
+        except Exception as e:
+            messagebox.showerror("Erro", f"Falha ao salvar configurações: {e}")
 
     def check_version_installed(self, version):
         jar_path = os.path.join(self.versions_dir, version, f"{version}.jar")
@@ -391,13 +445,43 @@ class AetherLauncherUI:
         try:
             java_cmd = self.find_java()
             if not java_cmd:
-                self.root.after(0, lambda: messagebox.showerror("Erro", "Java não encontrado!"))
+                self.root.after(0, lambda: messagebox.showerror("Erro", "Java não encontrado no sistema!\n\nPor favor, instale o JRE/JDK (Java 17 para versões novas ou Java 8 para antigas)."))
                 return
-            cmd = [java_cmd, "-Xmx2G", "-Xms1G", f"-Djava.library.path={self.natives_dir}", "-cp", os.path.join(self.versions_dir, version, f"{version}.jar"), "net.minecraft.client.main.Main", "--username", username, "--version", version, "--gameDir", self.minecraft_dir, "--assetsDir", self.assets_dir]
-            self.root.after(0, lambda: messagebox.showinfo("Aether", f"Iniciando Minecraft {version}..."))
-            subprocess.Popen(cmd, cwd=self.minecraft_dir).wait()
+            
+            jar_path = os.path.join(self.versions_dir, version, f"{version}.jar")
+            
+            # Comando de inicialização aprimorado
+            # Nota: Para um launcher completo, o classpath (-cp) precisaria incluir todas as libraries.
+            # Como estamos simplificando, tentamos rodar o JAR principal.
+            cmd = [
+                java_cmd,
+                "-Xmx2G",
+                "-Xms1G",
+                f"-Djava.library.path={self.natives_dir}",
+                "-Dminecraft.launcher.brand=AetherLauncher",
+                "-Dminecraft.launcher.version=2.0.0",
+                "-cp", jar_path,
+                "net.minecraft.client.main.Main",
+                "--username", username,
+                "--version", version,
+                "--gameDir", self.minecraft_dir,
+                "--assetsDir", self.assets_dir,
+                "--accessToken", "0",
+                "--userProperties", "{}"
+            ]
+            
+            self.root.after(0, lambda: messagebox.showinfo("Aether", f"Iniciando Minecraft {version}...\n\nSe o jogo não abrir, verifique se o Java instalado é compatível com esta versão."))
+            
+            # Executa e captura logs para debug se necessário
+            process = subprocess.Popen(cmd, cwd=self.minecraft_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            stdout, stderr = process.communicate()
+            
+            if process.returncode != 0:
+                print(f"Erro ao rodar Minecraft: {stderr}")
+                self.root.after(0, lambda: messagebox.showerror("Erro de Execução", f"O Minecraft fechou com erro.\n\nIsso geralmente acontece por falta de bibliotecas ou versão do Java incompatível."))
+                
         except Exception as e:
-            self.root.after(0, lambda: messagebox.showerror("Erro", f"Falha ao iniciar: {str(e)}"))
+            self.root.after(0, lambda: messagebox.showerror("Erro", f"Falha crítica ao iniciar: {str(e)}"))
 
     def find_java(self):
         # Lista expandida de locais comuns do Java no Linux

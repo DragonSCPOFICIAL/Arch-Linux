@@ -1,12 +1,13 @@
 {
-  "version": "1.0.2",
-  "build": 4,
+  "version": "1.1.0",
+  "build": 5,
   "release_date": "2026-02-08",
   "update_check_url": "https://raw.githubusercontent.com/DragonSCPOFICIAL/Arch-Linux/main/AetherLauncher/version.json",
   "changelog": [
-    "Correção da lógica de download (evita falso positivo de instalação)",
+    "Nova funcionalidade: Escolha de diretório customizado do jogo",
+    "Persistência de configurações de RAM e caminhos",
     "Melhoria na detecção automática do Java no Linux",
-    "Garantia de exibição da barra de progresso no download",
+    "Correção da lógica de download (evita falso positivo)",
     "Suporte nativo para Minecraft com gerenciamento de Java",
     "Sistema de perfis e biblioteca integrado"
   ],
