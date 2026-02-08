@@ -1,16 +1,16 @@
 {
-  "version": "1.1.0",
-  "build": 5,
+  "version": "4.8.1",
+  "build": 12,
   "release_date": "2026-02-08",
   "update_check_url": "https://raw.githubusercontent.com/DragonSCPOFICIAL/Arch-Linux/main/AetherLauncher/version.json",
   "changelog": [
-    "Nova funcionalidade: Escolha de diretório customizado do jogo",
-    "Persistência de configurações de RAM e caminhos",
-    "Melhoria na detecção automática do Java no Linux",
-    "Correção da lógica de download (evita falso positivo)",
-    "Suporte nativo para Minecraft com gerenciamento de Java",
-    "Sistema de perfis e biblioteca integrado"
+    "Interface: Adicionada seleção manual de perfil de driver na aba Performance",
+    "Compatibilidade: Novo perfil 'Aether Wine-Like' para Intel HD 3000 e Forge 1.21.1",
+    "Fix: Correção do erro ExceptionInInitializerError em versões 1.21.x",
+    "JVM: Adicionadas flags de desbloqueio de módulos para Java 21+",
+    "Lógica: Launcher agora prioriza perfil manual quando Auto-Tune está desligado",
+    "Estabilidade: Injeção de flags JNA para evitar conflitos com bibliotecas do sistema"
   ],
   "download_url": "https://raw.githubusercontent.com/DragonSCPOFICIAL/Arch-Linux/main/AetherLauncher/",
-  "min_version": "1.0.0"
+  "min_version": "4.0.0"
 }
