@@ -719,7 +719,12 @@ class AetherLauncherUI:
                         "-Dorg.lwjgl.system.allocator=system"
                     ])
                     if era == "v21":
-                        java_opts.append("-Djava.awt.headless=false")
+                        java_opts.extend([
+                            "-Djava.awt.headless=false",
+                            "-Djna.nosys=true",
+                            "--add-opens", "java.base/sun.security.util=ALL-UNNAMED",
+                            "--add-opens", "java.base/java.security=ALL-UNNAMED"
+                        ])
                         # Remover flags de performance se estiverem causando conflito na 1.21
                         if "-XX:MaxTenuringThreshold=1" in java_opts:
                             java_opts.remove("-XX:MaxTenuringThreshold=1")

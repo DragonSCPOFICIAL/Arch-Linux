@@ -196,15 +196,24 @@ def get_instance_path(base_dir, profile_name):
 def get_minecraft_era(version_id):
     """Classifica a versão do Minecraft em 'eras' para aplicar configurações específicas."""
     try:
-        parts = version_id.split('.')
-        major = int(parts[0]) if len(parts) > 0 else 1
-        minor = int(parts[1]) if len(parts) > 1 else 0
+        # Tentar extrair a versão base se for um ID complexo (ex: forge-1.21.1-...)
+        import re
+        version_match = re.search(r'(\d+\.\d+(\.\d+)?)', version_id)
+        if version_match:
+            base_version = version_match.group(1)
+            parts = base_version.split('.')
+            major = int(parts[0])
+            minor = int(parts[1])
+            
+            if major > 1 or (major == 1 and minor >= 21): return "v21"      # 1.21+ (Java 21)
+            if minor >= 17: return "modern"                # 1.17 - 1.20 (Java 17)
+            if minor >= 13: return "intermediate"          # 1.13 - 1.16 (Java 8/11/16)
+            if minor >= 7: return "legacy"                 # 1.7 - 1.12 (Java 8)
+            return "ancient"                               # < 1.7 (Java 8 + fixes)
         
-        if major > 1 or (major == 1 and minor >= 21): return "v21"      # 1.21+ (Java 21)
-        if minor >= 17: return "modern"                # 1.17 - 1.20 (Java 17)
-        if minor >= 13: return "intermediate"          # 1.13 - 1.16 (Java 8/11/16)
-        if minor >= 7: return "legacy"                 # 1.7 - 1.12 (Java 8)
-        return "ancient"                               # < 1.7 (Java 8 + fixes)
+        # Fallback para IDs que não seguem o padrão
+        if "1.21" in version_id: return "v21"
+        return "modern"
     except:
         return "modern"
 
