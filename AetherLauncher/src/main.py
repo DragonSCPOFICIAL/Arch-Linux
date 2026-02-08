@@ -5,7 +5,7 @@ import json
 import threading
 import subprocess
 import ssl
-import webbrowser
+import platform
 from PIL import Image, ImageTk
 import minecraft_launcher_lib
 import utils
@@ -16,7 +16,7 @@ ssl._create_default_https_context = ssl._create_unverified_context
 class AetherLauncherUI:
     def __init__(self, root):
         self.root = root
-        self.root.title("Aether Launcher v3.5 - Minecraft Elite Linux (Nativo)")
+        self.root.title("Aether Launcher v3.6 - Minecraft Elite Linux (Nativo)")
         
         # Configuração de Janela
         window_width, window_height = 1050, 680
@@ -28,8 +28,8 @@ class AetherLauncherUI:
         self.colors = {
             "accent": "#B43D3D",  
             "text": "#FFFFFF",
-            "sel_bg": "rgba(180, 61, 61, 0.3)", # Destaque vermelho sutil
-            "sidebar_bg": "#121212"
+            "sidebar_bg": "#121212",
+            "overlay": "#000000"
         }
         
         # Pastas
@@ -81,20 +81,21 @@ class AetherLauncherUI:
             self.mc_versions = ["1.20.1", "1.19.4", "1.12.2"]
 
     def setup_ui(self):
+        # Canvas para Fundo Total
         self.canvas = tk.Canvas(self.root, width=1050, height=680, highlightthickness=0)
         self.canvas.pack(fill="both", expand=True)
         
         self.load_background()
         
-        # Sidebar Overlay
+        # Sidebar Overlay (Semi-transparente)
         self.canvas.create_rectangle(0, 0, 250, 680, fill="#000000", stipple="gray50", outline="")
         
-        # Perfil Header
+        # Header Perfil
         self.canvas.create_text(85, 45, text="BEM-VINDO,", font=("Segoe UI", 7), fill="#ccc", anchor="w")
         self.nick_text = self.canvas.create_text(85, 60, text=self.username, font=("Segoe UI", 11, "bold"), fill="white", anchor="w")
         self.canvas.create_rectangle(25, 35, 70, 70, fill="#333", outline="#555")
 
-        # Botões Navegação
+        # Botões Sidebar
         self.create_sidebar_btn(100, "Configurações", "⚙", self.show_settings)
         self.create_sidebar_btn(140, "Gerenciar Instalações", "+", self.show_install)
         self.canvas.create_line(25, 185, 225, 185, fill="#444")
@@ -117,9 +118,9 @@ class AetherLauncherUI:
         self.lbl_ver_info.pack(fill="x", pady=(0, 10))
         self.update_selection_ui()
 
-        # Conteúdo Central
+        # --- ÁREA DE CONTEÚDO (TOTALMENTE TRANSPARENTE NO CANVAS) ---
         self.content_container = tk.Frame(self.root, bg="", bd=0)
-        self.canvas.create_window(650, 340, window=self.content_container, width=750, height=600, anchor="center")
+        self.content_window = self.canvas.create_window(650, 340, window=self.content_container, width=750, height=600, anchor="center")
         self.show_home()
 
     def load_background(self):
@@ -141,34 +142,25 @@ class AetherLauncherUI:
     def refresh_profiles_list(self):
         for w in self.profiles_frame.winfo_children(): w.destroy()
         self.profiles_frame.config(bg="#121212")
-        
         for p in self.profiles:
             is_sel = (p["id"] == self.selected_pid)
-            bg = "#B43D3D" if is_sel else "#121212" # Destaque vermelho se selecionado
-            fg = "white"
-            
+            bg = "#B43D3D" if is_sel else "#121212"
             f = tk.Frame(self.profiles_frame, bg=bg, padx=10, pady=8)
             f.pack(fill="x", pady=2)
-            
-            # Ícone de bloco
             tk.Canvas(f, width=16, height=16, bg="#FFFFFF" if is_sel else "#555", highlightthickness=0).pack(side="left")
-            
-            lbl = tk.Label(f, text=p["name"], font=("Segoe UI", 9, "bold" if is_sel else "normal"), bg=bg, fg=fg)
+            lbl = tk.Label(f, text=p["name"], font=("Segoe UI", 9, "bold" if is_sel else "normal"), bg=bg, fg="white")
             lbl.pack(side="left", padx=8)
-            
-            # Menu de Três Pontinhos (...)
             if is_sel:
                 opt_btn = tk.Label(f, text="⋮", font=("Segoe UI", 12, "bold"), bg=bg, fg="white", cursor="hand2")
                 opt_btn.pack(side="right")
                 opt_btn.bind("<Button-1>", lambda e, profile=p: self.show_profile_menu(e, profile))
-
             f.bind("<Button-1>", lambda e, pid=p["id"]: self.select_profile(pid))
             lbl.bind("<Button-1>", lambda e, pid=p["id"]: self.select_profile(pid))
 
     def show_profile_menu(self, event, profile):
         menu = tk.Menu(self.root, tearoff=0, bg="#222", fg="white", activebackground=self.colors["accent"])
         menu.add_command(label="📂 Abrir Diretório", command=lambda: self.open_profile_dir(profile))
-        menu.add_command(label="✏️ Editar", command=lambda: self.edit_profile(profile))
+        menu.add_command(label="✏️ Editar", command=lambda: self.show_install(edit_profile=profile))
         menu.add_separator()
         menu.add_command(label="🗑️ Apagar", command=lambda: self.delete_profile(profile["id"]))
         menu.post(event.x_root, event.y_root)
@@ -178,14 +170,9 @@ class AetherLauncherUI:
         if platform.system() == "Linux":
             subprocess.run(["xdg-open", path])
 
-    def edit_profile(self, profile):
-        self.show_install(edit_profile=profile)
-
     def delete_profile(self, pid):
-        if pid == "p_default":
-            messagebox.showwarning("Aviso", "Não é possível apagar a versão padrão.")
-            return
-        if messagebox.askyesno("Confirmar", "Apagar esta instalação e todos os seus arquivos?"):
+        if pid == "p_default": return
+        if messagebox.askyesno("Confirmar", "Apagar esta instalação?"):
             self.profiles = [p for p in self.profiles if p["id"] != pid]
             if self.selected_pid == pid: self.selected_pid = "p_default"
             self.save_launcher_data()
@@ -203,14 +190,21 @@ class AetherLauncherUI:
         p = next((x for x in self.profiles if x["id"] == self.selected_pid), self.profiles[0])
         self.lbl_ver_info.config(text=f"{p['type']} {p['version']}")
 
-    # --- TELAS ---
+    # --- TELAS SEM BLOCOS BRANCOS ---
     def show_home(self):
         for w in self.content_container.winfo_children(): w.destroy()
-        self.content_container.config(bg="")
-        tk.Label(self.content_container, text="BEM-VINDO AO AETHER LINUX", font=("Segoe UI", 22, "bold"), fg="white", bg="#1a1a1a").pack(pady=(60, 20))
-        news = tk.Frame(self.content_container, bg="#000000", padx=20, pady=10)
-        news.pack(fill="x", padx=100)
-        tk.Label(news, text="Aether Launcher: Performance Nativa Ativada", font=("Segoe UI", 10), bg="#000000", fg="#ccc").pack()
+        # Removemos qualquer cor de fundo do container para ser 100% transparente
+        self.content_container.config(bg="") 
+        
+        # Título flutuando sobre o fundo
+        tk.Label(self.content_container, text="BEM-VINDO AO AETHER LINUX", 
+                 font=("Segoe UI", 24, "bold"), fg="white", bg=None).pack(pady=(80, 20))
+        
+        # Caixa de status semi-transparente (opcional, ou sem fundo)
+        status_box = tk.Frame(self.content_container, bg="#000000", padx=20, pady=10)
+        status_box.pack(pady=10)
+        tk.Label(status_box, text="Aether Launcher: Performance Nativa Ativada", 
+                 font=("Segoe UI", 10), bg="#000000", fg="#ccc").pack()
         
         self.prog_ui = tk.Frame(self.content_container, bg="#000000", padx=20, pady=15)
         self.prog_ui.pack(side="bottom", fill="x", padx=100, pady=60)
@@ -222,24 +216,30 @@ class AetherLauncherUI:
 
     def show_settings(self):
         for w in self.content_container.winfo_children(): w.destroy()
+        # Usamos um fundo escuro semi-transparente para as telas de edição
         self.content_container.config(bg="#1a1a1a")
+        
         tk.Label(self.content_container, text="CONFIGURAÇÕES", font=("Segoe UI", 18, "bold"), bg="#1a1a1a", fg="white").pack(pady=40)
         tk.Label(self.content_container, text="Nickname do Jogador", bg="#1a1a1a", fg="#aaa").pack(anchor="w", padx=150)
         e_nick = tk.Entry(self.content_container, font=("Segoe UI", 12), bg="#333", fg="white", bd=0, insertbackground="white")
         e_nick.pack(fill="x", padx=150, pady=10, ipady=8)
         e_nick.insert(0, self.username)
+        
         def save():
             self.username = e_nick.get().strip()
             self.canvas.itemconfig(self.nick_text, text=self.username)
             self.save_launcher_data()
             self.show_home()
-        tk.Button(self.content_container, text="SALVAR", bg=self.colors["accent"], fg="white", bd=0, font=("Segoe UI", 10, "bold"), padx=40, pady=10, command=save).pack(pady=40)
+        tk.Button(self.content_container, text="SALVAR", bg=self.colors["accent"], fg="white", bd=0, 
+                 font=("Segoe UI", 10, "bold"), padx=40, pady=10, command=save).pack(pady=40)
 
     def show_install(self, edit_profile=None):
         for w in self.content_container.winfo_children(): w.destroy()
         self.content_container.config(bg="#1a1a1a")
+        
         title = "EDITAR INSTALAÇÃO" if edit_profile else "GERENCIAR INSTALAÇÕES"
         tk.Label(self.content_container, text=title, font=("Segoe UI", 18, "bold"), bg="#1a1a1a", fg="white").pack(pady=40)
+        
         container = tk.Frame(self.content_container, bg="#1a1a1a")
         container.pack(fill="both", expand=True, padx=150)
         
@@ -273,7 +273,8 @@ class AetherLauncherUI:
             self.save_launcher_data()
             self.select_profile(self.selected_pid)
             
-        tk.Button(container, text="SALVAR" if edit_profile else "CRIAR", bg=self.colors["accent"], fg="white", bd=0, font=("Segoe UI", 11, "bold"), pady=12, command=action).pack(side="bottom", fill="x", pady=40)
+        tk.Button(container, text="SALVAR" if edit_profile else "CRIAR", bg=self.colors["accent"], fg="white", bd=0, 
+                 font=("Segoe UI", 11, "bold"), pady=12, command=action).pack(side="bottom", fill="x", pady=40)
 
     def launch_game(self):
         if self.downloading: return
@@ -304,7 +305,7 @@ class AetherLauncherUI:
                 if fv:
                     minecraft_launcher_lib.forge.install_forge_version(fv, self.mc_dir, callback=cb)
                     final_vid = fv
-            options = {"username": self.username, "uuid": "", "token": "", "gameDirectory": inst_path, "launcherName": "AetherLauncher", "launcherVersion": "3.5"}
+            options = {"username": self.username, "uuid": "", "token": "", "gameDirectory": inst_path, "launcherName": "AetherLauncher", "launcherVersion": "3.6"}
             env = utils.get_compatibility_env() if p.get("compatibility_mode", True) else os.environ.copy()
             cmd = minecraft_launcher_lib.command.get_minecraft_command(final_vid, self.mc_dir, options)
             self.root.after(0, lambda: self.prog_ui.pack_forget())
