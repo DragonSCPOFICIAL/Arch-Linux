@@ -342,7 +342,19 @@ class AetherLauncherUI:
 
     def launch_game(self):
         if self.downloading or not self.selected_pid: return
-        self.show_home(); self.downloading = True; self.btn_play.config(state="disabled", text="INICIANDO...")
+        self.downloading = True
+        self.btn_play.config(state="disabled", text="INICIANDO...")
+        
+        # Criar interface de progresso ANTES de iniciar o thread
+        self.clear_content()
+        self.active_content_frame = tk.Frame(self.root, bg="#000000", padx=20, pady=15)
+        self.active_content_id = self.canvas.create_window(650, 580, window=self.active_content_frame, width=600)
+        self.prog_lbl = tk.Label(self.active_content_frame, text="Iniciando...", bg="#000000", fg="#888", font=("Segoe UI", 9))
+        self.prog_lbl.pack(anchor="w")
+        self.prog_bar = ttk.Progressbar(self.active_content_frame, mode='determinate')
+        self.prog_bar.pack(fill="x", pady=5)
+        
+        # Agora sim iniciar o download
         threading.Thread(target=self.engine_run, daemon=True).start()
 
     def engine_run(self):
@@ -355,37 +367,48 @@ class AetherLauncherUI:
             vid = p["version"]
             inst = utils.get_instance_path(self.mc_dir, p["name"])
             
+            print(f"\n{'='*60}")
+            print(f"Iniciando launcher para versao: {vid}")
+            print(f"Diretorio MC: {self.mc_dir}")
+            print(f"Diretorio instancia: {inst}")
+            print(f"{'='*60}\n")
+            
             # Criar diretórios necessários
             if not os.path.exists(inst):
                 os.makedirs(inst, exist_ok=True)
+                print(f"Criado diretorio da instancia: {inst}")
             
             if not os.path.exists(self.mc_dir):
                 os.makedirs(self.mc_dir, exist_ok=True)
+                print(f"Criado diretorio minecraft: {self.mc_dir}")
             
             # Variáveis para controle de progresso
-            current_max = [0]
-            current_progress = [0]
+            download_info = {"current": 0, "max": 0, "files": 0}
             
             # Callback para atualizar progresso
             def set_status(status):
+                print(f"[STATUS] {status}")
                 def update():
                     if hasattr(self, 'prog_lbl'):
                         self.prog_lbl.config(text=status)
-                        print(f"Status: {status}")
                 self.root.after(0, update)
             
             def set_progress(progress):
-                current_progress[0] = progress
+                download_info["current"] = progress
+                print(f"[PROGRESSO] {progress}/{download_info['max']}")
                 def update():
                     if hasattr(self, 'prog_bar'):
                         self.prog_bar.config(value=progress)
                 self.root.after(0, update)
             
             def set_max(maximum):
-                current_max[0] = maximum
+                download_info["max"] = maximum
+                download_info["files"] += 1
+                print(f"[MAX] {maximum} (arquivo #{download_info['files']})")
                 def update():
                     if hasattr(self, 'prog_bar'):
                         self.prog_bar.config(maximum=maximum)
+                        self.prog_bar.config(value=0)
                 self.root.after(0, update)
             
             callback = {
@@ -394,21 +417,28 @@ class AetherLauncherUI:
                 "setMax": set_max
             }
             
-            # Baixar e instalar Minecraft completo (inclui assets, libraries, etc)
+            # Baixar e instalar Minecraft completo
+            print(f"\n>>> Iniciando download do Minecraft {vid}...")
             set_status(f"Baixando Minecraft {vid}...")
+            
             minecraft_launcher_lib.install.install_minecraft_version(
                 version=vid,
                 minecraft_directory=self.mc_dir,
                 callback=callback
             )
             
+            print(f">>> Download do Minecraft {vid} concluido!")
+            
             final_vid = vid
             
             # Instalar modloader se necessário
             if p["type"] == "Fabric":
+                print(f"\n>>> Instalando Fabric...")
                 set_status("Instalando Fabric...")
                 try:
                     fabric_loader = minecraft_launcher_lib.fabric.get_latest_loader_version()
+                    print(f"Versao Fabric: {fabric_loader}")
+                    
                     minecraft_launcher_lib.fabric.install_fabric(
                         minecraft_version=vid,
                         minecraft_directory=self.mc_dir,
@@ -416,44 +446,37 @@ class AetherLauncherUI:
                         callback=callback
                     )
                     final_vid = f"fabric-loader-{fabric_loader}-{vid}"
+                    print(f">>> Fabric instalado! ID final: {final_vid}")
                 except Exception as e:
-                    print(f"Erro ao instalar Fabric: {e}")
+                    print(f"ERRO ao instalar Fabric: {e}")
+                    import traceback
+                    traceback.print_exc()
                     final_vid = vid
                     
             elif p["type"] == "Forge":
+                print(f"\n>>> Instalando Forge...")
                 set_status("Instalando Forge...")
                 try:
                     forge_version = minecraft_launcher_lib.forge.find_forge_version(vid)
                     if forge_version:
+                        print(f"Versao Forge: {forge_version}")
                         minecraft_launcher_lib.forge.install_forge_version(
                             forge_version,
                             self.mc_dir,
                             callback=callback
                         )
                         final_vid = forge_version
+                        print(f">>> Forge instalado! ID final: {final_vid}")
                     else:
                         print(f"Forge nao disponivel para {vid}")
                 except Exception as e:
-                    print(f"Erro ao instalar Forge: {e}")
+                    print(f"ERRO ao instalar Forge: {e}")
+                    import traceback
+                    traceback.print_exc()
                     final_vid = vid
             
-            # Instalar runtime Java se necessário
-            set_status("Verificando Java Runtime...")
-            try:
-                jvm_path = minecraft_launcher_lib.runtime.get_executable_path(
-                    minecraft_launcher_lib.runtime.get_jvm_runtimes(self.mc_dir)[0]
-                )
-                if not os.path.exists(jvm_path):
-                    set_status("Baixando Java Runtime...")
-                    minecraft_launcher_lib.runtime.install_jvm_runtime(
-                        jvm_version=minecraft_launcher_lib.runtime.get_jvm_runtimes(self.mc_dir)[0],
-                        minecraft_directory=self.mc_dir,
-                        callback=callback
-                    )
-            except Exception as e:
-                print(f"Aviso Java Runtime: {e}")
-            
             # Preparar opções de lançamento
+            print(f"\n>>> Preparando para iniciar...")
             set_status("Preparando para iniciar...")
             
             options = {
@@ -466,6 +489,7 @@ class AetherLauncherUI:
             }
             
             # Obter comando de lançamento
+            print(f">>> Gerando comando de execucao...")
             cmd = minecraft_launcher_lib.command.get_minecraft_command(
                 version=final_vid,
                 minecraft_directory=self.mc_dir,
@@ -476,16 +500,14 @@ class AetherLauncherUI:
             env = os.environ.copy()
             
             if p.get("compatibility_mode", True):
-                # Variáveis OpenGL para compatibilidade
+                print(">>> Modo de compatibilidade ativado")
                 env["MESA_GL_VERSION_OVERRIDE"] = "4.6"
                 env["MESA_GLSL_VERSION_OVERRIDE"] = "460"
                 env["__GLX_VENDOR_LIBRARY_NAME"] = "mesa"
                 
-                # Java options
                 java_opts = [
                     "-Djava.awt.headless=false",
-                    "-Dorg.lwjgl.util.Debug=true",
-                    "-Dorg.lwjgl.util.DebugLoader=true"
+                    "-Dorg.lwjgl.util.Debug=true"
                 ]
                 env["_JAVA_OPTIONS"] = " ".join(java_opts)
             
@@ -498,13 +520,19 @@ class AetherLauncherUI:
             
             set_status("Iniciando Minecraft...")
             
-            # Log para debug
-            print(f"\nComando de execucao:")
-            print(" ".join(cmd))
-            print(f"\nDiretorio de trabalho: {inst}")
-            print(f"Versao final: {final_vid}\n")
+            # Log do comando
+            print(f"\n{'='*60}")
+            print("COMANDO DE EXECUCAO:")
+            print(f"{'='*60}")
+            for i, arg in enumerate(cmd):
+                print(f"{i}: {arg}")
+            print(f"{'='*60}")
+            print(f"Diretorio de trabalho: {inst}")
+            print(f"Versao final: {final_vid}")
+            print(f"{'='*60}\n")
             
             # Iniciar processo
+            print(">>> Iniciando processo do Minecraft...")
             process = subprocess.Popen(
                 cmd,
                 env=env,
@@ -515,21 +543,24 @@ class AetherLauncherUI:
                 bufsize=1
             )
             
+            print(f">>> Processo iniciado! PID: {process.pid}\n")
+            
             # Monitorar saída em tempo real
             def monitor_process():
+                print("=== SAIDA DO MINECRAFT ===\n")
                 for line in iter(process.stdout.readline, ''):
                     if line:
-                        print(f"[Minecraft] {line.rstrip()}")
+                        print(f"[MC] {line.rstrip()}")
                 
                 process.wait()
                 exit_code = process.returncode
                 
+                print(f"\n=== MINECRAFT ENCERRADO ===")
+                print(f"Codigo de saida: {exit_code}\n")
+                
                 if exit_code != 0:
-                    error_msg = f"Minecraft encerrou com codigo de erro: {exit_code}"
-                    print(error_msg)
+                    error_msg = f"Minecraft encerrou com codigo de erro: {exit_code}\n\nVerifique o console para mais detalhes."
                     self.root.after(0, lambda: messagebox.showerror("Erro", error_msg))
-                else:
-                    print("Minecraft encerrado normalmente")
             
             threading.Thread(target=monitor_process, daemon=True).start()
             
@@ -539,10 +570,12 @@ class AetherLauncherUI:
         except Exception as e:
             import traceback
             error_msg = traceback.format_exc()
-            print(f"\n=== ERRO ===")
+            print(f"\n{'='*60}")
+            print("ERRO FATAL:")
+            print(f"{'='*60}")
             print(error_msg)
-            print("============\n")
-            self.root.after(0, lambda: messagebox.showerror("Erro", f"Erro ao iniciar:\n{str(e)}"))
+            print(f"{'='*60}\n")
+            self.root.after(0, lambda: messagebox.showerror("Erro", f"Erro ao iniciar:\n{str(e)}\n\nVeja o console para detalhes."))
             
         finally:
             self.downloading = False
