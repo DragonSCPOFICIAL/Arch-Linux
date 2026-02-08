@@ -290,7 +290,9 @@ class AetherLauncherUI:
         messagebox.showinfo("Aether", "Configurações salvas com sucesso!")
 
     def check_version_installed(self, version):
-        return os.path.exists(os.path.join(self.versions_dir, version, f"{version}.jar"))
+        jar_path = os.path.join(self.versions_dir, version, f"{version}.jar")
+        # Verifica se o arquivo existe e tem mais de 1MB (evita considerar arquivos corrompidos/vazios)
+        return os.path.exists(jar_path) and os.path.getsize(jar_path) > 1024 * 1024
 
     def check_version_status(self):
         if hasattr(self, 'version_status'):
@@ -312,19 +314,29 @@ class AetherLauncherUI:
         threading.Thread(target=self._download_version_thread, args=(version,), daemon=True).start()
 
     def _download_version_thread(self, version):
+        version_dir = os.path.join(self.versions_dir, version)
+        jar_path = os.path.join(version_dir, f"{version}.jar")
         try:
-            version_dir = os.path.join(self.versions_dir, version)
             os.makedirs(version_dir, exist_ok=True)
-            jar_path = os.path.join(version_dir, f"{version}.jar")
-            self.root.after(0, lambda: self.update_progress(f"Baixando Minecraft {version}...", 0))
+            self.root.after(0, lambda: self.update_progress(f"Iniciando download de {version}...", 0))
             self.download_file(self.available_versions[version], jar_path)
-            self.root.after(0, lambda: self.update_progress(f"✓ Minecraft {version} instalado!", 100))
-            self.root.after(0, lambda: messagebox.showinfo("Aether", f"Minecraft {version} instalado com sucesso!"))
+            
+            # Verificação final após download
+            if self.check_version_installed(version):
+                self.root.after(0, lambda: self.update_progress(f"✓ Minecraft {version} instalado!", 100))
+                self.root.after(0, lambda: messagebox.showinfo("Aether", f"Minecraft {version} instalado com sucesso!"))
+            else:
+                raise Exception("Arquivo baixado parece estar incompleto ou corrompido.")
+                
             self.root.after(0, lambda: [setattr(self, 'current_page', None), self.show_versions_page()])
         except Exception as e:
             import traceback
             error_msg = f"Erro: {str(e)}" if str(e) else "Erro desconhecido de conexão"
             print(f"Erro no download: {traceback.format_exc()}")
+            # Se falhar, remove o arquivo incompleto para não dar "falso positivo" depois
+            if os.path.exists(jar_path):
+                try: os.remove(jar_path)
+                except: pass
             self.root.after(0, lambda: messagebox.showerror("Erro", f"Falha ao baixar: {error_msg}"))
         finally:
             self.downloading = False
@@ -388,11 +400,37 @@ class AetherLauncherUI:
             self.root.after(0, lambda: messagebox.showerror("Erro", f"Falha ao iniciar: {str(e)}"))
 
     def find_java(self):
-        for path in ["/usr/bin/java", "/usr/lib/jvm/default/bin/java"]:
+        # Lista expandida de locais comuns do Java no Linux
+        common_paths = [
+            "/usr/bin/java",
+            "/usr/lib/jvm/default/bin/java",
+            "/usr/lib/jvm/java-17-openjdk/bin/java",
+            "/usr/lib/jvm/java-11-openjdk/bin/java",
+            "/usr/lib/jvm/java-8-openjdk/bin/java",
+            os.path.expanduser("~/.aetherlauncher/java/bin/java")
+        ]
+        for path in common_paths:
             if os.path.exists(path): return path
+            
+        # Tenta via comando 'which'
         try:
-            return subprocess.run(['which', 'java'], capture_output=True, text=True).stdout.strip() or None
-        except: return None
+            res = subprocess.run(['which', 'java'], capture_output=True, text=True)
+            if res.returncode == 0 and res.stdout.strip():
+                return res.stdout.strip()
+        except: pass
+        
+        # Tenta via 'whereis' como alternativa
+        try:
+            res = subprocess.run(['whereis', 'java'], capture_output=True, text=True)
+            parts = res.stdout.split(':')
+            if len(parts) > 1:
+                paths = parts[1].strip().split()
+                for p in paths:
+                    if p.endswith('/bin/java') and os.path.exists(p):
+                        return p
+        except: pass
+        
+        return None
 
     def get_remote_version(self):
         try:
