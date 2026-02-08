@@ -659,18 +659,23 @@ class AetherLauncherUI:
                     "-Djava.net.preferIPv4Stack=true"
                 ])
                 
-                # Flags Específicas para Eras Modernas (Java 17/21+)
+                    # Flags Específicas para Eras Modernas (Java 17/21+) - DESBLOQUEIO TOTAL LINUX
                 if era in ["v21", "modern"]:
-                    # Suavizar flags para evitar Código 1
                     java_opts.extend([
                         "--add-modules", "java.base,java.desktop",
                         "--add-opens", "java.base/java.lang=ALL-UNNAMED",
                         "--add-opens", "java.base/java.util=ALL-UNNAMED",
                         "--add-opens", "java.base/java.io=ALL-UNNAMED",
+                        "--add-opens", "java.base/java.net=ALL-UNNAMED",
+                        "--add-opens", "java.base/java.nio=ALL-UNNAMED",
+                        "--add-opens", "java.base/sun.nio.ch=ALL-UNNAMED",
+                        "--add-opens", "java.base/sun.reflect.annotation=ALL-UNNAMED",
                         "--add-opens", "java.desktop/sun.awt=ALL-UNNAMED",
                         "--add-opens", "java.desktop/sun.java2d=ALL-UNNAMED",
+                        "--add-opens", "jdk.unsupported/sun.misc=ALL-UNNAMED",
                         "-Dorg.lwjgl.util.NoChecks=true",
-                        "-Dorg.lwjgl.util.Debug=false"
+                        "-Dorg.lwjgl.util.Debug=false",
+                        "-Dorg.lwjgl.system.allocator=system"
                     ])
                     if era == "v21":
                         java_opts.append("-Djava.awt.headless=false")

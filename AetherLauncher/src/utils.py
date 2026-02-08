@@ -81,13 +81,23 @@ def get_compatibility_env(is_recent=True):
     # Corrige problemas de interface em algumas distros
     env["_JAVA_AWT_WM_NONREPARENTING"] = "1"
     
-    # No Linux, ExceptionInInitializerError muitas vezes é conflito entre bibliotecas nativas
-    # Vamos deixar o launcher gerenciar os natives, mas garantir que os drivers de vídeo do sistema estejam acessíveis
-    sys_libs = "/usr/lib/x86_64-linux-gnu:/usr/lib64:/usr/lib"
-    if "LD_LIBRARY_PATH" in env:
-        env["LD_LIBRARY_PATH"] = f"{env['LD_LIBRARY_PATH']}:{sys_libs}"
-    else:
-        env["LD_LIBRARY_PATH"] = sys_libs
+    # PODER DO LINUX: Injeção de bibliotecas do sistema para evitar ExceptionInInitializerError
+    # Priorizamos as bibliotecas do sistema (X11, GL, ALSA) sobre as que o MC traz
+    sys_paths = [
+        "/usr/lib/x86_64-linux-gnu",
+        "/usr/lib/x86_64-linux-gnu/dri",
+        "/usr/lib64",
+        "/usr/lib",
+        "/lib/x86_64-linux-gnu"
+    ]
+    
+    current_ld = env.get("LD_LIBRARY_PATH", "")
+    env["LD_LIBRARY_PATH"] = ":".join(sys_paths) + (":" + current_ld if current_ld else "")
+    
+    # Forçar o uso de drivers nativos e desativar verificações de segurança do Java que barram o hardware
+    env["MESA_GL_VERSION_OVERRIDE"] = "4.6"
+    env["MESA_GLSL_VERSION_OVERRIDE"] = "460"
+    env["LIBGL_DRI3_DISABLE"] = "1" # Às vezes o DRI3 causa erro em GPUs velhas, o DRI2 é mais compatível
     
     # Garantir que o Java não tente usar o Wayland se estiver dando erro (forçar X11)
     env["_JAVA_AWT_WM_NONREPARENTING"] = "1"
