@@ -15,16 +15,16 @@ ssl._create_default_https_context = ssl._create_unverified_context
 class AetherLauncherUI:
     def __init__(self, root):
         self.root = root
-        self.root.title("Aether Launcher v3.1 - Minecraft Elite Linux (Nativo)")
+        self.root.title("Aether Launcher v3.2 - Minecraft Elite Linux (Nativo)")
         
         # Configuração de Janela
         window_width, window_height = 1050, 680
         sw, sh = self.root.winfo_screenwidth(), self.root.winfo_screenheight()
         self.root.geometry(f"{window_width}x{window_height}+{(sw-window_width)//2}+{(sh-window_height)//2}")
-        self.root.configure(bg="#EAEAEA")
+        self.root.configure(bg="#FFFFFF")
         self.root.resizable(False, False)
         
-        # Design System (Focado em evitar blocos "vazios")
+        # Design System
         self.colors = {
             "bg": "#EAEAEA",      
             "sidebar": "#FFFFFF", 
@@ -32,8 +32,7 @@ class AetherLauncherUI:
             "text": "#333333",
             "text_dim": "#666666",
             "border": "#DDDDDD",
-            "hover": "#F5F5F5",
-            "card_bg": "#D0D0D0" # Cor para os ícones de bloco
+            "hover": "#F5F5F5"
         }
         
         # Pastas
@@ -48,19 +47,24 @@ class AetherLauncherUI:
         
     def load_launcher_data(self):
         if os.path.exists(self.data_file):
-            with open(self.data_file, 'r') as f:
-                self.data = json.load(f)
+            try:
+                with open(self.data_file, 'r') as f:
+                    self.data = json.load(f)
+            except: self.data = self.get_default_data()
         else:
-            self.data = {
-                "username": "DragonSCP",
-                "last_profile": "p_default",
-                "profiles": [
-                    {"name": "Minecraft 1.12.2", "version": "1.12.2", "type": "Vanilla", "id": "p_default", "compatibility_mode": True}
-                ]
-            }
+            self.data = self.get_default_data()
         self.profiles = self.data["profiles"]
         self.selected_pid = self.data["last_profile"]
         self.username = self.data["username"]
+
+    def get_default_data(self):
+        return {
+            "username": "DragonSCP",
+            "last_profile": "p_default",
+            "profiles": [
+                {"name": "Minecraft 1.12.2", "version": "1.12.2", "type": "Vanilla", "id": "p_default", "compatibility_mode": True}
+            ]
+        }
 
     def save_launcher_data(self):
         self.data["profiles"] = self.profiles
@@ -75,18 +79,19 @@ class AetherLauncherUI:
         self.sidebar.pack(side="left", fill="y")
         self.sidebar.pack_propagate(False)
         
-        tk.Frame(self.root, bg=self.colors["border"], width=1).pack(side="left", fill="y")
-        
         # Área Principal
         self.main = tk.Frame(self.root, bg=self.colors["bg"])
         self.main.pack(side="right", fill="both", expand=True)
         
-        # --- SIDEBAR ---
-        # Perfil
+        # --- BACKGROUND TOTAL NA ÁREA PRINCIPAL ---
+        self.bg_label = tk.Label(self.main, bg=self.colors["bg"], bd=0)
+        self.bg_label.place(x=0, y=0, relwidth=1, relheight=1)
+        self.load_full_background()
+
+        # --- COMPONENTES SIDEBAR ---
         p_header = tk.Frame(self.sidebar, bg=self.colors["sidebar"], pady=20, padx=20)
         p_header.pack(fill="x")
         
-        # Avatar (Tenta carregar ou usa placeholder cinza escuro)
         self.avatar_label = tk.Label(p_header, bg="#333", width=5, height=2)
         self.avatar_label.pack(side="left")
         self.load_image_into_label(os.path.join(self.assets_dir, "icon.png"), self.avatar_label, (40, 40))
@@ -97,7 +102,6 @@ class AetherLauncherUI:
         self.u_name_lbl = tk.Label(u_info, text=self.username, font=("Segoe UI", 10, "bold"), bg=self.colors["sidebar"], fg=self.colors["text"])
         self.u_name_lbl.pack(anchor="w")
 
-        # Menu
         self.nav = tk.Frame(self.sidebar, bg=self.colors["sidebar"], pady=10)
         self.nav.pack(fill="both", expand=True)
         
@@ -110,7 +114,6 @@ class AetherLauncherUI:
         self.inst_list.pack(fill="both", expand=True)
         self.refresh_profiles()
         
-        # Botão JOGAR
         self.footer = tk.Frame(self.sidebar, bg=self.colors["accent"], height=85)
         self.footer.pack(side="bottom", fill="x")
         
@@ -123,36 +126,36 @@ class AetherLauncherUI:
         self.lbl_ver_info.pack(fill="x", pady=(0, 10))
         self.update_selection_ui()
 
-        # --- ÁREA PRINCIPAL ---
-        # Banner Central (Tenta carregar background.png)
-        self.banner_label = tk.Label(self.main, bg="#333", bd=0)
-        self.banner_label.place(relx=0.5, rely=0.45, anchor="center", relwidth=0.85, relheight=0.55)
-        self.load_image_into_label(os.path.join(self.assets_dir, "background.png"), self.banner_label, (700, 350))
-        
-        # News Box
-        self.news = tk.Frame(self.main, bg="white", bd=1, relief="solid")
+        # --- COMPONENTES SOBRE O BACKGROUND ---
+        self.news = tk.Frame(self.main, bg="white", bd=0)
         self.news.place(relx=0.5, rely=0.1, anchor="center", relwidth=0.85, height=40)
         tk.Label(self.news, text="Aether Launcher: Performance Nativa Ativada", bg="white", fg=self.colors["text"]).pack(pady=8)
 
-        # Progresso
-        self.prog_box = tk.Frame(self.main, bg=self.colors["bg"])
-        self.prog_box.pack(side="bottom", fill="x", padx=40, pady=20)
-        self.prog_lbl = tk.Label(self.prog_box, text="Pronto", bg=self.colors["bg"], fg=self.colors["text_dim"], font=("Segoe UI", 9))
-        self.prog_lbl.pack(anchor="w")
+        self.prog_box = tk.Frame(self.main, bg="#FFFFFF", bd=1, relief="flat")
+        self.prog_box.place(relx=0.5, rely=0.9, anchor="center", relwidth=0.85, height=60)
+        self.prog_lbl = tk.Label(self.prog_box, text="Pronto", bg="white", fg=self.colors["text_dim"], font=("Segoe UI", 9))
+        self.prog_lbl.pack(anchor="w", padx=10, pady=(5,0))
         self.prog_bar = ttk.Progressbar(self.prog_box, mode='determinate', length=100)
-        self.prog_bar.pack(fill="x", pady=5)
-        self.prog_box.pack_forget()
+        self.prog_bar.pack(fill="x", padx=10, pady=5)
+        self.prog_box.place_forget()
+
+    def load_full_background(self):
+        bg_path = os.path.join(self.assets_dir, "background.png")
+        if os.path.exists(bg_path):
+            try:
+                img = Image.open(bg_path).resize((800, 680), Image.LANCZOS)
+                self.full_bg = ImageTk.PhotoImage(img)
+                self.bg_label.config(image=self.full_bg)
+            except: pass
 
     def load_image_into_label(self, path, label, size):
-        """Tenta carregar uma imagem e colocar no label, se falhar mantém a cor atual."""
         try:
             if os.path.exists(path):
                 img = Image.open(path).resize(size, Image.LANCZOS)
                 photo = ImageTk.PhotoImage(img)
-                label.config(image=photo, bg=self.colors["bg"])
-                label.image = photo # Mantém referência
-        except Exception as e:
-            print(f"Erro ao carregar imagem {path}: {e}")
+                label.config(image=photo, bg=self.colors["sidebar"])
+                label.image = photo
+        except: pass
 
     def create_nav_item(self, text, icon, cmd):
         f = tk.Frame(self.nav, bg=self.colors["sidebar"], padx=20, pady=8)
@@ -171,11 +174,7 @@ class AetherLauncherUI:
             bg = "#D0D0D0" if is_sel else self.colors["sidebar"]
             f = tk.Frame(self.inst_list, bg=bg, padx=20, pady=8)
             f.pack(fill="x")
-            
-            # Ícone de bloco (Verde se for o selecionado)
-            icon_bg = "#5D8A3E" if is_sel else "#777"
-            tk.Canvas(f, width=20, height=20, bg=icon_bg, highlightthickness=0).pack(side="left")
-            
+            tk.Canvas(f, width=20, height=20, bg="#5D8A3E" if is_sel else "#777", highlightthickness=0).pack(side="left")
             tk.Label(f, text=p["name"], font=("Segoe UI", 10), bg=bg, fg=self.colors["text"]).pack(side="left", padx=10)
             f.bind("<Button-1>", lambda e, pid=p["id"]: self.select_profile(pid))
             for c in f.winfo_children(): c.bind("<Button-1>", lambda e, pid=p["id"]: self.select_profile(pid))
@@ -198,38 +197,69 @@ class AetherLauncherUI:
             self.save_launcher_data()
 
     def open_profile_editor(self):
+        # Janela de Nova Instalação - Refatorada para evitar tela branca
         ed = tk.Toplevel(self.root)
         ed.title("Nova Instalação")
-        ed.geometry("450x500")
-        ed.configure(bg="white")
+        ed.geometry("480x550")
+        ed.configure(bg="#FFFFFF")
         ed.transient(self.root)
         ed.grab_set()
         
-        tk.Label(ed, text="Nova Instalação", font=("Segoe UI", 14, "bold"), bg="white", pady=20).pack()
+        # Forçar atualização para garantir que a janela não fique branca
+        ed.update_idletasks()
         
-        tk.Label(ed, text="Nome", bg="white", fg=self.colors["text_dim"]).pack(anchor="w", padx=40)
-        e_name = tk.Entry(ed, bg="#F0F0F0", bd=0, font=("Segoe UI", 11))
-        e_name.pack(fill="x", padx=40, pady=(5, 15), ipady=8)
+        container = tk.Frame(ed, bg="white", padx=30, pady=30)
+        container.pack(fill="both", expand=True)
+        
+        tk.Label(container, text="Criar Nova Instalação", font=("Segoe UI", 16, "bold"), bg="white", fg=self.colors["text"]).pack(pady=(0, 20))
+        
+        # Nome
+        tk.Label(container, text="Nome da Instalação", bg="white", fg=self.colors["text_dim"], font=("Segoe UI", 9)).pack(anchor="w")
+        e_name = tk.Entry(container, bg="#F0F0F0", bd=0, font=("Segoe UI", 11))
+        e_name.pack(fill="x", pady=(5, 20), ipady=8)
         e_name.insert(0, "Nova Instância")
 
-        tk.Label(ed, text="Versão", bg="white", fg=self.colors["text_dim"]).pack(anchor="w", padx=40)
-        e_ver = tk.Entry(ed, bg="#F0F0F0", bd=0, font=("Segoe UI", 11))
-        e_ver.pack(fill="x", padx=40, pady=(5, 15), ipady=8)
+        # Versão
+        tk.Label(container, text="Versão do Minecraft (ex: 1.20.1)", bg="white", fg=self.colors["text_dim"], font=("Segoe UI", 9)).pack(anchor="w")
+        e_ver = tk.Entry(container, bg="#F0F0F0", bd=0, font=("Segoe UI", 11))
+        e_ver.pack(fill="x", pady=(5, 20), ipady=8)
         e_ver.insert(0, "1.20.1")
 
-        def save():
-            new_p = {"name": e_name.get(), "version": e_ver.get(), "type": "Vanilla", "id": f"p_{os.urandom(3).hex()}"}
+        # Loader
+        tk.Label(container, text="Mod Loader", bg="white", fg=self.colors["text_dim"], font=("Segoe UI", 9)).pack(anchor="w")
+        type_var = tk.StringVar(value="Vanilla")
+        tf = tk.Frame(container, bg="white")
+        tf.pack(fill="x", pady=10)
+        for t in ["Vanilla", "Forge", "Fabric"]:
+            tk.Radiobutton(tf, text=t, variable=type_var, value=t, bg="white", font=("Segoe UI", 10)).pack(side="left", padx=(0, 15))
+
+        def save_profile():
+            name = e_name.get().strip()
+            ver = e_ver.get().strip()
+            if not name or not ver:
+                messagebox.showwarning("Aviso", "Preencha todos os campos!")
+                return
+            
+            new_p = {
+                "name": name,
+                "version": ver,
+                "type": type_var.get(),
+                "id": f"p_{os.urandom(3).hex()}",
+                "compatibility_mode": True
+            }
             self.profiles.append(new_p)
             self.select_profile(new_p["id"])
             ed.destroy()
 
-        tk.Button(ed, text="SALVAR", bg=self.colors["accent"], fg="white", bd=0, font=("Segoe UI", 10, "bold"), padx=30, pady=10, command=save).pack(side="bottom", pady=30)
+        btn_save = tk.Button(container, text="SALVAR INSTALAÇÃO", bg=self.colors["accent"], fg="white", bd=0, 
+                             font=("Segoe UI", 11, "bold"), cursor="hand2", command=save_profile)
+        btn_save.pack(side="bottom", fill="x", ipady=12, pady=20)
 
     def launch_game(self):
         if self.downloading: return
         self.downloading = True
         self.btn_play.config(state="disabled", text="INICIANDO...")
-        self.prog_box.pack(side="bottom", fill="x", padx=40, pady=20)
+        self.prog_box.place(relx=0.5, rely=0.9, anchor="center", relwidth=0.85, height=60)
         threading.Thread(target=self.engine_run, daemon=True).start()
 
     def engine_run(self):
@@ -243,10 +273,22 @@ class AetherLauncherUI:
                 "setMax": lambda v: self.root.after(0, lambda: self.prog_bar.config(maximum=v))
             }
             minecraft_launcher_lib.install.install_minecraft_version(vid, self.mc_dir, callback=cb)
-            options = {"username": self.username, "uuid": "", "token": "", "gameDirectory": inst_path, "launcherName": "AetherLauncher", "launcherVersion": "3.1"}
+            
+            final_vid = vid
+            if p["type"] == "Fabric":
+                fv = minecraft_launcher_lib.fabric.get_latest_loader_version()
+                minecraft_launcher_lib.fabric.install_fabric(vid, self.mc_dir, loader_version=fv, callback=cb)
+                final_vid = minecraft_launcher_lib.fabric.get_fabric_version(vid, fv)
+            elif p["type"] == "Forge":
+                fv = minecraft_launcher_lib.forge.find_forge_version(vid)
+                if fv:
+                    minecraft_launcher_lib.forge.install_forge_version(fv, self.mc_dir, callback=cb)
+                    final_vid = fv
+
+            options = {"username": self.username, "uuid": "", "token": "", "gameDirectory": inst_path, "launcherName": "AetherLauncher", "launcherVersion": "3.2"}
             env = utils.get_compatibility_env() if p.get("compatibility_mode", True) else os.environ.copy()
-            cmd = minecraft_launcher_lib.command.get_minecraft_command(vid, self.mc_dir, options)
-            self.root.after(0, lambda: self.prog_box.pack_forget())
+            cmd = minecraft_launcher_lib.command.get_minecraft_command(final_vid, self.mc_dir, options)
+            self.root.after(0, lambda: self.prog_box.place_forget())
             subprocess.run(cmd, env=env)
         except Exception as e:
             self.root.after(0, lambda: messagebox.showerror("Erro", str(e)))
