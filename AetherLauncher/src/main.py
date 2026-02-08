@@ -33,6 +33,7 @@ class AetherLauncherUI:
         self.data_file = os.path.join(self.config_dir, "launcher_data.json")
         self.mc_dir = os.path.expanduser("~/.aetherlauncher/minecraft")
         self.assets_dir = os.path.join(self.base_dir, "assets")
+        self.icons_dir = os.path.join(self.assets_dir, "icons")
         self.avatars_dir = os.path.join(self.assets_dir, "avatars")
         
         # Cache de Imagens persistente
@@ -115,6 +116,11 @@ class AetherLauncherUI:
         
         # Sidebar
         self.canvas.create_rectangle(0, 0, 250, 680, fill="#000000", stipple="gray50", outline="")
+        
+        # Logo do Minecraft
+        logo_path = os.path.join(self.icons_dir, "minecraft_logo.png")
+        logo_img = self.get_photo("mc_logo", logo_path, (200, 52))
+        if logo_img: self.canvas.create_image(650, 80, image=logo_img, anchor="center")
         self.canvas.create_text(85, 45, text="BEM-VINDO,", font=("Segoe UI", 7), fill="#ccc", anchor="w")
         self.nick_display = self.canvas.create_text(85, 60, text=self.username, font=("Segoe UI", 11, "bold"), fill="white", anchor="w")
         
@@ -161,7 +167,7 @@ class AetherLauncherUI:
             tk.Label(self.profiles_frame, text="Nenhuma instalação", bg="#121212", fg="#555").pack(pady=20)
             return
             
-        grass_path = os.path.join(self.assets_dir, "grass_block.png")
+        grass_path = os.path.join(self.icons_dir, "grass_block.png")
         grass_img = self.get_photo("grass_icon", grass_path, (16, 16))
         
         for p in self.profiles:
