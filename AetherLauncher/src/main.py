@@ -397,7 +397,7 @@ class AetherLauncherUI:
             # Baixar e instalar Minecraft completo (inclui assets, libraries, etc)
             set_status(f"Baixando Minecraft {vid}...")
             minecraft_launcher_lib.install.install_minecraft_version(
-                versionid=vid,
+                version=vid,
                 minecraft_directory=self.mc_dir,
                 callback=callback
             )
