@@ -47,16 +47,22 @@ if [ "$AUTO_CONFIRM" = true ]; then
     rm -rf "$BASE_DATA_DIR" || true
     rm -f "$LOG_FILE" || true
 else
-    read -p "Deseja remover também as configurações, perfis e dados do Minecraft? (~/.aetherlauncher) (s/n): " choice
+    echo -e "\nAVISO: Os dados do Minecraft e configurações estão em $BASE_DATA_DIR"
+    read -p "Deseja remover também as configurações, perfis e dados do Minecraft? (s/n): " choice
     if [[ "$choice" == "s" || "$choice" == "S" ]]; then
+        echo "Removendo dados do usuário..."
         rm -rf "$CONFIG_DIR" || true
         rm -rf "$BASE_DATA_DIR" || true
         rm -f "$LOG_FILE" || true
-        echo "Dados do usuário removidos."
+        echo "Dados do usuário removidos com sucesso."
     else
         echo "Dados do usuário mantidos."
     fi
 fi
+
+# 5. Limpeza final
+echo "Limpando caches..."
+sudo rm -f /var/crash/aetherlauncher* 2>/dev/null || true
 
 echo "----------------------------------------"
 echo "Desinstalação Concluída!"

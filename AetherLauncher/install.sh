@@ -6,7 +6,7 @@
 APP_NAME="aetherlauncher"
 INSTALL_DIR="/opt/$APP_NAME"
 BIN_DIR="/usr/bin"
-DESKTOP_DIR="$HOME/.local/share/applications"
+DESKTOP_DIR="/usr/share/applications"
 
 echo "Iniciando Instalação do Aether Launcher"
 

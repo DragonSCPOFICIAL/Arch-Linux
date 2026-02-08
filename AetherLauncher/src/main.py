@@ -90,24 +90,45 @@ class AetherLauncherUI:
         self.version_lbl.pack(side="bottom", pady=10)
         
         # Main Area
+        self.main_area = tk.Frame(self.root, bg=self.colors["bg"])
+        self.main_area.pack(side="right", fill="both", expand=True)
+        
+        # Tentar carregar imagem de fundo em uma thread separada ou após o mapeamento da janela
+        self.root.after(100, self.load_background)
+
+    def load_background(self):
         try:
             script_dir = os.path.dirname(os.path.abspath(__file__))
             launcher_base_dir = os.path.abspath(os.path.join(script_dir, os.pardir))
             bg_image_path = os.path.join(launcher_base_dir, "background.png")
+            
+            if not os.path.exists(bg_image_path):
+                return
+
             original_image = Image.open(bg_image_path)
-            self.root.update_idletasks()
-            main_area_width = self.root.winfo_width() - self.sidebar.winfo_width()
-            main_area_height = self.root.winfo_height()
-            resized_image = original_image.resize((main_area_width, main_area_height), Image.LANCZOS)
+            
+            # Obter dimensões reais
+            width = self.root.winfo_width() - self.sidebar.winfo_width()
+            height = self.root.winfo_height()
+            
+            if width <= 1 or height <= 1:
+                # Se ainda não tiver tamanho, tenta novamente em breve
+                self.root.after(200, self.load_background)
+                return
+
+            resized_image = original_image.resize((width, height), Image.LANCZOS)
             self.bg_photo = ImageTk.PhotoImage(resized_image)
-            self.background_label = tk.Label(self.root, image=self.bg_photo)
-            self.background_label.place(x=self.sidebar.winfo_width(), y=0, relwidth=1, relheight=1)
+            
+            if hasattr(self, 'background_label'):
+                self.background_label.configure(image=self.bg_photo)
+            else:
+                self.background_label = tk.Label(self.main_area, image=self.bg_photo, bd=0)
+                self.background_label.place(x=0, y=0, relwidth=1, relheight=1)
+                self.background_label.lower() # Colocar atrás de tudo
+            
             self.background_label.image = self.bg_photo
-            self.main_area = tk.Frame(self.root, bg="")
-            self.main_area.place(x=self.sidebar.winfo_width(), y=0, relwidth=1, relheight=1)
-        except:
-            self.main_area = tk.Frame(self.root, bg=self.colors["bg"])
-            self.main_area.pack(side="right", fill="both", expand=True)
+        except Exception as e:
+            print(f"Erro ao carregar background: {e}")
         
         self.show_play_page()
 

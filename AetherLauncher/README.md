@@ -46,9 +46,14 @@ O Aether Launcher oferece dois métodos de desinstalação:
 4. Clique em **DESINSTALAR AETHER LAUNCHER**.
 
 ### 💻 Via Terminal
+Para desinstalar completamente o launcher e remover os links do sistema:
 ```bash
 sudo bash /opt/aetherlauncher/uninstall.sh
 ```
+
+**Opções extras:**
+- Para desinstalação automática (sem perguntas): `sudo bash /opt/aetherlauncher/uninstall.sh --auto`
+- Se você removeu a pasta `/opt`, pode usar o script local: `sudo bash uninstall.sh`
 
 ---
 **Desenvolvido por DragonSCPOFICIAL**
