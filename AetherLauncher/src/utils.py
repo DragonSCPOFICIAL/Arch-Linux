@@ -62,10 +62,21 @@ def get_compatibility_env(is_recent=True):
     env["vblank_mode"] = "0"
     env["__GL_SYNC_TO_VBLANK"] = "0"
     
-    # Otimizações de Memória e Driver
+    # Otimizações de Memória e Driver para GPUs Fracas
     env["MESA_DEBUG"] = "silent"
     env["allow_glsl_extension_directive_mid_shader"] = "true"
     env["pre_shader_compiler"] = "true"
+    
+    # Otimizações de Memória de Vídeo (VRAM)
+    env["mesa_glthread"] = "true" # Multithreading no driver OpenGL (Ganho de FPS)
+    env["MESA_EXTENSION_MAX_YEAR"] = "2024"
+    env["MESA_GL_VERSION_OVERRIDE"] = "4.6"
+    
+    # Cache de Shaders (Evita stutters em GPUs fracas)
+    shader_cache_dir = os.path.expanduser("~/.cache/aetherlauncher/shaders")
+    os.makedirs(shader_cache_dir, exist_ok=True)
+    env["MESA_SHADER_CACHE_DIR"] = shader_cache_dir
+    env["MESA_SHADER_CACHE_MAX_SIZE"] = "1G"
     
     # Corrige problemas de interface em algumas distros
     env["_JAVA_AWT_WM_NONREPARENTING"] = "1"

@@ -700,16 +700,17 @@ class AetherLauncherUI:
             # Iniciar processo
             # Adicionar flag para ignorar erros de inicialização de classes se necessário
             final_cmd = cmd
-            
-            # Aplicar prioridade se configurado
+             # Iniciar processo com monitoramento de GPU
+            final_cmd = cmd
             if self.data.get("use_high_priority", True):
-                print(">>> Iniciando com Alta Prioridade (Nice/Ionice)...")
-                # Usar nice 0 se -10 falhar por permissão
+                print(">>> Otimizando prioridade de CPU/Disco...")
                 final_cmd = ["nice", "-n", "0"] + cmd
                 try:
                     final_cmd = ["ionice", "-c", "2", "-n", "4"] + final_cmd
                 except: pass
 
+            print(f">>> Comando final: {' '.join(final_cmd[:10])}...")
+            
             process = subprocess.Popen(
                 final_cmd,
                 env=env,
@@ -719,6 +720,15 @@ class AetherLauncherUI:
                 text=True,
                 bufsize=1
             )
+            
+            # Adicionar verificação de crash imediato por driver
+            import time
+            time.sleep(1)
+            if process.poll() is not None:
+                # O processo morreu rápido, tentar modo de compatibilidade extrema
+                print(">>> Crash detectado. Tentando modo de compatibilidade extrema...")
+                env["LIBGL_ALWAYS_SOFTWARE"] = "1"
+                process = subprocess.Popen(final_cmd, env=env, cwd=inst, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1)
             
             print(f">>> Processo iniciado! PID: {process.pid}\n")
             
