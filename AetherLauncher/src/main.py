@@ -763,6 +763,27 @@ class AetherLauncherUI:
                             "--add-opens", "java.base/sun.security.util=ALL-UNNAMED",
                             "--add-opens", "java.base/java.security=ALL-UNNAMED"
                         ])
+                        # Restaurar flags de compatibilidade para Java 21 (1.21.x)
+                        # Isso garante que a 1.21.10 e outras versões modernas funcionem sem travar
+                        java_opts.extend([
+                            "--add-modules", "java.management,java.base,java.desktop,jdk.unsupported",
+                            "--add-opens", "java.base/java.lang=ALL-UNNAMED",
+                            "--add-opens", "java.base/java.lang.reflect=ALL-UNNAMED",
+                            "--add-opens", "java.base/java.util=ALL-UNNAMED",
+                            "--add-opens", "java.base/java.util.concurrent=ALL-UNNAMED",
+                            "--add-opens", "java.base/java.io=ALL-UNNAMED",
+                            "--add-opens", "java.base/java.net=ALL-UNNAMED",
+                            "--add-opens", "java.base/java.nio=ALL-UNNAMED",
+                            "--add-opens", "java.base/sun.nio.ch=ALL-UNNAMED",
+                            "--add-opens", "java.management/java.lang.management=ALL-UNNAMED",
+                            "--add-opens", "java.management/sun.management=ALL-UNNAMED",
+                            "--add-opens", "java.desktop/sun.awt=ALL-UNNAMED",
+                            "--add-opens", "jdk.unsupported/sun.misc=ALL-UNNAMED",
+                            "-Djna.nosys=true",
+                            "-Dlog4j2.disable.jmx=true",
+                            "-Dlog4j2.formatMsgNoLookups=true"
+                        ])
+                        
                         if "-XX:MaxTenuringThreshold=1" in java_opts:
                             java_opts.remove("-XX:MaxTenuringThreshold=1")
                 
