@@ -8,6 +8,7 @@ from tkinter import ttk, scrolledtext, messagebox, font
 import threading
 import sys
 import os
+import subprocess
 from datetime import datetime
 
 # Importar configurações e utilidades
@@ -290,14 +291,9 @@ class BRXAIInterface:
         """Processa a mensagem (chamará o engine de IA)"""
         try:
             self.is_processing = True
-            
-            # Aqui você chamaria o engine de IA real
-            # response = self.ai_engine.process(message)
-            
-            # Por enquanto, simulação
+            # Simulação
             response = f"Entendi sua solicitação: '{message}'. Estou processando..."
             self.append_message("BRX AI", response, "ai")
-            
         except Exception as e:
             logger.error(f"Erro ao processar mensagem: {e}")
             self.append_message("SISTEMA", f"Erro: {str(e)}", "system")
@@ -307,18 +303,10 @@ class BRXAIInterface:
     def append_message(self, sender, message, tag="system"):
         """Adiciona uma mensagem ao chat"""
         self.chat_display.config(state="normal")
-        
         timestamp = format_timestamp()
-        
-        # Adicionar timestamp
         self.chat_display.insert(tk.END, f"[{timestamp}] ", "timestamp")
-        
-        # Adicionar remetente
         self.chat_display.insert(tk.END, f"{sender}: ", tag)
-        
-        # Adicionar mensagem
         self.chat_display.insert(tk.END, f"{message}\n\n")
-        
         self.chat_display.config(state="disabled")
         self.chat_display.see(tk.END)
     
@@ -330,69 +318,29 @@ class BRXAIInterface:
     def show_vision_page(self):
         """Mostra a página de visão do sistema"""
         self.clear_main_area()
-        
         container = tk.Frame(self.main_area, bg=COLORS["bg_primary"], padx=20, pady=20)
         container.pack(fill="both", expand=True)
-        
-        title = tk.Label(
-            container,
-            text="Visão do Agente",
-            font=FONTS["title_medium"],
-            bg=COLORS["bg_primary"],
-            fg=COLORS["text_primary"]
-        )
+        title = tk.Label(container, text="Visão do Agente", font=FONTS["title_medium"], bg=COLORS["bg_primary"], fg=COLORS["text_primary"])
         title.pack(anchor="w", pady=(0, 20))
-        
-        # Placeholder para visão
-        vision_card = tk.Frame(
-            container,
-            bg=COLORS["bg_tertiary"],
-            height=400,
-            highlightthickness=1,
-            highlightbackground=COLORS["border"]
-        )
+        vision_card = tk.Frame(container, bg=COLORS["bg_tertiary"], height=400, highlightthickness=1, highlightbackground=COLORS["border"])
         vision_card.pack(fill="both", expand=True)
         vision_card.pack_propagate(False)
-        
-        placeholder = tk.Label(
-            vision_card,
-            text="[ FEED DE TELA EM TEMPO REAL ]",
-            font=FONTS["title_small"],
-            bg=COLORS["bg_tertiary"],
-            fg=COLORS["text_secondary"]
-        )
+        placeholder = tk.Label(vision_card, text="[ FEED DE TELA EM TEMPO REAL ]", font=FONTS["title_small"], bg=COLORS["bg_tertiary"], fg=COLORS["text_secondary"])
         placeholder.place(relx=0.5, rely=0.5, anchor="center")
     
     def show_automation_page(self):
         """Mostra a página de automação"""
         self.clear_main_area()
-        
         container = tk.Frame(self.main_area, bg=COLORS["bg_primary"], padx=20, pady=20)
         container.pack(fill="both", expand=True)
-        
-        title = tk.Label(
-            container,
-            text="Painel de Automação",
-            font=FONTS["title_medium"],
-            bg=COLORS["bg_primary"],
-            fg=COLORS["text_primary"]
-        )
+        title = tk.Label(container, text="Painel de Automação", font=FONTS["title_medium"], bg=COLORS["bg_primary"], fg=COLORS["text_primary"])
         title.pack(anchor="w", pady=(0, 20))
-        
-        # Scroll frame
         canvas = tk.Canvas(container, bg=COLORS["bg_primary"], bd=0, highlightthickness=0)
         scrollbar = ttk.Scrollbar(container, orient="vertical", command=canvas.yview)
         scrollable_frame = tk.Frame(canvas, bg=COLORS["bg_primary"])
-        
-        scrollable_frame.bind(
-            "<Configure>",
-            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
-        )
-        
+        scrollable_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
         canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
         canvas.configure(yscrollcommand=scrollbar.set)
-        
-        # Tools
         tools = [
             ("📸 Captura de Tela", "Permite que a IA veja o que está acontecendo na tela."),
             ("🖱️ Controle de Mouse", "Permite que a IA clique e mova o cursor."),
@@ -401,45 +349,17 @@ class BRXAIInterface:
             ("📊 Monitoramento", "Monitora recursos do sistema em tempo real."),
             ("🔐 Segurança", "Controles de segurança e permissões."),
         ]
-        
         for title_tool, desc in tools:
-            card = tk.Frame(
-                scrollable_frame,
-                bg=COLORS["bg_tertiary"],
-                padx=15,
-                pady=12,
-                highlightthickness=1,
-                highlightbackground=COLORS["border"]
-            )
+            card = tk.Frame(scrollable_frame, bg=COLORS["bg_tertiary"], padx=15, pady=12, highlightthickness=1, highlightbackground=COLORS["border"])
             card.pack(fill="x", pady=8)
-            
-            title_label = tk.Label(
-                card,
-                text=title_tool,
-                font=FONTS["title_small"],
-                bg=COLORS["bg_tertiary"],
-                fg=COLORS["accent_primary"]
-            )
-            title_label.pack(anchor="w")
-            
-            desc_label = tk.Label(
-                card,
-                text=desc,
-                font=FONTS["body_small"],
-                bg=COLORS["bg_tertiary"],
-                fg=COLORS["text_secondary"],
-                wraplength=400,
-                justify="left"
-            )
-            desc_label.pack(anchor="w", pady=(5, 0))
-        
+            tk.Label(card, text=title_tool, font=FONTS["title_small"], bg=COLORS["bg_tertiary"], fg=COLORS["accent_primary"]).pack(anchor="w")
+            tk.Label(card, text=desc, font=FONTS["body_small"], bg=COLORS["bg_tertiary"], fg=COLORS["text_secondary"], wraplength=400, justify="left").pack(anchor="w", pady=(5, 0))
         canvas.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
     
     def show_settings_page(self):
         """Mostra a página de configurações"""
         self.clear_main_area()
-        
         container = tk.Frame(self.main_area, bg=COLORS["bg_primary"], padx=20, pady=20)
         container.pack(fill="both", expand=True)
         
@@ -485,7 +405,50 @@ class BRXAIInterface:
                 variable=var
             )
             check.pack(anchor="w", pady=8)
-    
+
+        # Zona de Perigo
+        danger_frame = tk.Frame(container, bg=COLORS["bg_primary"], pady=30)
+        danger_frame.pack(fill="x")
+        
+        tk.Label(danger_frame, text="ZONA DE PERIGO", font=FONTS["label"], bg=COLORS["bg_primary"], fg=COLORS["error"]).pack(anchor="w")
+        
+        uninstall_btn = tk.Button(
+            danger_frame,
+            text="DESINSTALAR BRX AI COMPLETAMENTE",
+            font=FONTS["button"],
+            bg=COLORS["error"],
+            fg="#FFFFFF",
+            activebackground="#C0392B",
+            activeforeground="#FFFFFF",
+            bd=0,
+            padx=20,
+            pady=12,
+            cursor="hand2",
+            command=self.confirm_uninstall
+        )
+        uninstall_btn.pack(anchor="w", pady=10)
+
+    def confirm_uninstall(self):
+        """Confirma e executa a desinstalação"""
+        if messagebox.askyesno("Confirmar Desinstalação", "Tem certeza que deseja desinstalar o BRX AI?\n\nEsta ação removerá todos os arquivos do sistema e encerrará o programa."):
+            try:
+                # Caminho para o script de desinstalação
+                uninstall_script = "/opt/brx_ai_app/uninstall.sh"
+                if not os.path.exists(uninstall_script):
+                    # Tentar encontrar no diretório local se não estiver instalado
+                    script_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+                    uninstall_script = os.path.join(script_dir, "uninstall.sh")
+                
+                if os.path.exists(uninstall_script):
+                    # Executar o desinstalador com --auto
+                    subprocess.Popen(["sudo", "bash", uninstall_script, "--auto"])
+                    # Fechar o app imediatamente
+                    self.root.destroy()
+                else:
+                    messagebox.showerror("Erro", "Script de desinstalação não encontrado em /opt/brx_ai_app/uninstall.sh")
+            except Exception as e:
+                messagebox.showerror("Erro", f"Falha ao iniciar desinstalação: {str(e)}")
+
     def update_system_status(self):
         """Atualiza o status do sistema na sidebar"""
         try:
@@ -494,13 +457,8 @@ class BRXAIInterface:
             self.system_label.config(text=status_text)
         except Exception as e:
             logger.error(f"Erro ao atualizar status do sistema: {e}")
-        
-        # Atualizar a cada 2 segundos
         self.root.after(2000, self.update_system_status)
 
-# ============================================================================
-# FUNÇÃO PARA INICIAR A INTERFACE
-# ============================================================================
 def create_interface(root, ai_engine=None):
     """Cria e retorna a interface do BRX AI"""
     return BRXAIInterface(root, ai_engine)

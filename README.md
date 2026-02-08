@@ -14,6 +14,7 @@ if [ -d "Arch-Linux" ]; then sudo chown -R $USER:$USER Arch-Linux && cd Arch-Lin
 ```
 
 ### 🗑️ Desinstalação Completa
+O desinstalador agora suporta o modo automático via interface e remoção completa via terminal:
 ```bash
 sudo bash /opt/brx_ai_app/uninstall.sh
 ```
@@ -30,6 +31,7 @@ if [ -d "Arch-Linux" ]; then sudo chown -R $USER:$USER Arch-Linux && cd Arch-Lin
 ```
 
 ### 🗑️ Desinstalação Completa
+O desinstalador agora suporta o modo automático via interface e remoção completa via terminal:
 ```bash
 sudo bash /opt/aetherlauncher/uninstall.sh
 ```

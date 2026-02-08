@@ -27,6 +27,7 @@ class AetherLauncherUI:
             "accent": "#00E5FF",
             "success": "#00C853",
             "warning": "#FFA726",
+            "error": "#FF5252",
             "text": "#FFFFFF",
             "text_dim": "#8B949E"
         }
@@ -89,184 +90,124 @@ class AetherLauncherUI:
         self.version_lbl.pack(side="bottom", pady=10)
         
         # Main Area
-        # Carregar imagem de fundo
         try:
-            # Ajustar o caminho do background.png para o diretório de instalação
-            # self.base_dir é definido como ~/.aetherlauncher, mas o background.png é copiado para /opt/aetherlauncher
-            # AetherLauncher.sh define BASE_DIR como /opt/aetherlauncher ou o diretório do script
-            # Usaremos o diretório base do script para encontrar o background.png
             script_dir = os.path.dirname(os.path.abspath(__file__))
-            # Subir um nível para chegar à pasta AetherLauncher
             launcher_base_dir = os.path.abspath(os.path.join(script_dir, os.pardir))
             bg_image_path = os.path.join(launcher_base_dir, "background.png")
             original_image = Image.open(bg_image_path)
-            # Redimensionar a imagem para preencher a área principal
-            # Obter as dimensões da janela principal (root)
-            self.root.update_idletasks() # Atualiza para obter as dimensões corretas
+            self.root.update_idletasks()
             main_area_width = self.root.winfo_width() - self.sidebar.winfo_width()
             main_area_height = self.root.winfo_height()
-
             resized_image = original_image.resize((main_area_width, main_area_height), Image.LANCZOS)
             self.bg_photo = ImageTk.PhotoImage(resized_image)
-
             self.background_label = tk.Label(self.root, image=self.bg_photo)
             self.background_label.place(x=self.sidebar.winfo_width(), y=0, relwidth=1, relheight=1)
-            self.background_label.image = self.bg_photo # Manter referência
-
-            self.main_area = tk.Frame(self.root, bg="") # Fundo transparente para o frame
+            self.background_label.image = self.bg_photo
+            self.main_area = tk.Frame(self.root, bg="")
             self.main_area.place(x=self.sidebar.winfo_width(), y=0, relwidth=1, relheight=1)
-
-        except FileNotFoundError:
-            print("Arquivo de background.png não encontrado. Usando cor de fundo padrão.")
-            self.main_area = tk.Frame(self.root, bg=self.colors["bg"])
-            self.main_area.pack(side="right", fill="both", expand=True)
-        except Exception as e:
-            print(f"Erro ao carregar imagem de fundo: {e}")
+        except:
             self.main_area = tk.Frame(self.root, bg=self.colors["bg"])
             self.main_area.pack(side="right", fill="both", expand=True)
         
-        # Mostrar página inicial
         self.show_play_page()
 
     def show_play_page(self):
         self.clear_main_area()
-        
         container = tk.Frame(self.main_area, bg="", padx=40, pady=40)
         container.pack(fill="both", expand=True)
-        
-        tk.Label(container, text="BEM-VINDO AO AETHER LINUX", font=("Segoe UI", 24, "bold"), 
-                 bg="", fg=self.colors["text"]).pack(anchor="w")
-        
-        # Card de Jogo
+        tk.Label(container, text="BEM-VINDO AO AETHER LINUX", font=("Segoe UI", 24, "bold"), bg="", fg=self.colors["text"]).pack(anchor="w")
         self.play_card = tk.Frame(container, bg=self.colors["card"], padx=30, pady=30)
         self.play_card.pack(fill="x", pady=40)
-        
-        tk.Label(self.play_card, text="NICKNAME:", bg=self.colors["card"], 
-                fg=self.colors["accent"], font=("Segoe UI", 10, "bold")).pack(anchor="w")
-        self.user_entry = tk.Entry(self.play_card, bg="#262B40", fg="white", 
-                                   insertbackground="white", bd=0, font=("Segoe UI", 12))
+        tk.Label(self.play_card, text="NICKNAME:", bg=self.colors["card"], fg=self.colors["accent"], font=("Segoe UI", 10, "bold")).pack(anchor="w")
+        self.user_entry = tk.Entry(self.play_card, bg="#262B40", fg="white", insertbackground="white", bd=0, font=("Segoe UI", 12))
         self.user_entry.pack(fill="x", pady=(5, 20), ipady=8)
         self.user_entry.insert(0, self.load_username())
-        
-        # Seletor de Versão
-        tk.Label(self.play_card, text="VERSÃO:", bg=self.colors["card"], 
-                fg=self.colors["accent"], font=("Segoe UI", 10, "bold")).pack(anchor="w", pady=(10, 5))
-        
+        tk.Label(self.play_card, text="VERSÃO:", bg=self.colors["card"], fg=self.colors["accent"], font=("Segoe UI", 10, "bold")).pack(anchor="w", pady=(10, 5))
         version_frame = tk.Frame(self.play_card, bg=self.colors["card"])
         version_frame.pack(fill="x", pady=(0, 20))
-        
         self.version_var = tk.StringVar(value=self.selected_version)
-        version_combo = ttk.Combobox(version_frame, textvariable=self.version_var, 
-                                     values=list(self.available_versions.keys()),
-                                     state="readonly", font=("Segoe UI", 11))
+        version_combo = ttk.Combobox(version_frame, textvariable=self.version_var, values=list(self.available_versions.keys()), state="readonly", font=("Segoe UI", 11))
         version_combo.pack(fill="x", ipady=5)
         version_combo.bind("<<ComboboxSelected>>", lambda e: self.on_version_change())
-        
-        # Status da versão
-        self.version_status = tk.Label(self.play_card, text="", bg=self.colors["card"], 
-                                       fg=self.colors["text_dim"], font=("Segoe UI", 9))
+        self.version_status = tk.Label(self.play_card, text="", bg=self.colors["card"], fg=self.colors["text_dim"], font=("Segoe UI", 9))
         self.version_status.pack(anchor="w")
-        
-        # Barra de progresso
         self.progress_frame = tk.Frame(container, bg="")
-        self.progress_label = tk.Label(self.progress_frame, text="", bg="", 
-                                       fg=self.colors["text"], font=("Segoe UI", 10))
+        self.progress_label = tk.Label(self.progress_frame, text="", bg="", fg=self.colors["text"], font=("Segoe UI", 10))
         self.progress_label.pack(anchor="w", pady=(0, 5))
-        
         self.progress_bar = ttk.Progressbar(self.progress_frame, mode='determinate', length=400)
-        
-        # Botão Jogar
-        self.play_btn = tk.Button(container, text="INICIAR MINECRAFT", font=("Segoe UI", 14, "bold"), 
-                                 bg=self.colors["success"], fg="white", bd=0, cursor="hand2", 
-                                 command=self.launch_game, activebackground="#00A040")
+        self.play_btn = tk.Button(container, text="INICIAR MINECRAFT", font=("Segoe UI", 14, "bold"), bg=self.colors["success"], fg="white", bd=0, cursor="hand2", command=self.launch_game, activebackground="#00A040")
         self.play_btn.pack(fill="x", side="bottom", ipady=15)
-        
         self.check_version_status()
 
     def show_versions_page(self):
         self.clear_main_area()
-        
         container = tk.Frame(self.main_area, bg="", padx=40, pady=40)
         container.pack(fill="both", expand=True)
-        
-        tk.Label(container, text="GERENCIADOR DE VERSÕES", font=("Segoe UI", 24, "bold"), 
-                 bg="", fg=self.colors["text"]).pack(anchor="w", pady=(0, 30))
-        
+        tk.Label(container, text="GERENCIADOR DE VERSÕES", font=("Segoe UI", 24, "bold"), bg="", fg=self.colors["text"]).pack(anchor="w", pady=(0, 30))
         for version, url in self.available_versions.items():
             self.create_version_card(container, version)
 
     def show_settings_page(self):
         self.clear_main_area()
-        
         container = tk.Frame(self.main_area, bg="", padx=40, pady=40)
         container.pack(fill="both", expand=True)
-        
-        tk.Label(container, text="CONFIGURAÇÕES", font=("Segoe UI", 24, "bold"), 
-                 bg="", fg=self.colors["text"]).pack(anchor="w", pady=(0, 30))
-        
+        tk.Label(container, text="CONFIGURAÇÕES", font=("Segoe UI", 24, "bold"), bg="", fg=self.colors["text"]).pack(anchor="w", pady=(0, 30))
         settings_card = tk.Frame(container, bg=self.colors["card"], padx=30, pady=30)
         settings_card.pack(fill="x", pady=10)
-        
-        tk.Label(settings_card, text="MEMÓRIA RAM (MB):", bg=self.colors["card"], 
-                fg=self.colors["accent"], font=("Segoe UI", 10, "bold")).pack(anchor="w")
-        
-        self.ram_entry = tk.Entry(settings_card, bg="#262B40", fg="white", 
-                                 insertbackground="white", bd=0, font=("Segoe UI", 12))
+        tk.Label(settings_card, text="MEMÓRIA RAM (MB):", bg=self.colors["card"], fg=self.colors["accent"], font=("Segoe UI", 10, "bold")).pack(anchor="w")
+        self.ram_entry = tk.Entry(settings_card, bg="#262B40", fg="white", insertbackground="white", bd=0, font=("Segoe UI", 12))
         self.ram_entry.pack(fill="x", pady=(5, 20), ipady=8)
         self.ram_entry.insert(0, "2048")
+        tk.Button(settings_card, text="SALVAR CONFIGURAÇÕES", font=("Segoe UI", 12, "bold"), bg=self.colors["accent"], fg="white", bd=0, cursor="hand2", command=self.save_settings).pack(fill="x", ipady=10)
         
-        tk.Button(settings_card, text="SALVAR CONFIGURAÇÕES", font=("Segoe UI", 12, "bold"), 
-                 bg=self.colors["accent"], fg="white", bd=0, cursor="hand2",
-                 command=self.save_settings).pack(fill="x", ipady=10)
+        # Zona de Perigo
+        danger_frame = tk.Frame(container, bg="", pady=40)
+        danger_frame.pack(fill="x")
+        tk.Label(danger_frame, text="ZONA DE PERIGO", font=("Segoe UI", 10, "bold"), bg="", fg=self.colors["error"]).pack(anchor="w")
+        tk.Button(danger_frame, text="DESINSTALAR AETHER LAUNCHER", font=("Segoe UI", 12, "bold"), bg=self.colors["error"], fg="white", bd=0, cursor="hand2", command=self.confirm_uninstall).pack(fill="x", pady=10, ipady=10)
+
+    def confirm_uninstall(self):
+        if messagebox.askyesno("Confirmar Desinstalação", "Tem certeza que deseja desinstalar o Aether Launcher?\n\nIsso removerá a aplicação do sistema."):
+            try:
+                uninstall_script = "/opt/aetherlauncher/uninstall.sh"
+                if not os.path.exists(uninstall_script):
+                    script_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+                    uninstall_script = os.path.join(script_dir, "uninstall.sh")
+                
+                if os.path.exists(uninstall_script):
+                    subprocess.Popen(["sudo", "bash", uninstall_script, "--auto"])
+                    self.root.destroy()
+                else:
+                    messagebox.showerror("Erro", "Script de desinstalação não encontrado.")
+            except Exception as e:
+                messagebox.showerror("Erro", f"Falha ao desinstalar: {str(e)}")
 
     def show_profiles_page(self):
         self.clear_main_area()
-        
         container = tk.Frame(self.main_area, bg="", padx=40, pady=40)
         container.pack(fill="both", expand=True)
-        
-        tk.Label(container, text="PERFIS", font=("Segoe UI", 24, "bold"), 
-                 bg="", fg=self.colors["text"]).pack(anchor="w", pady=(0, 30))
-        
-        tk.Label(container, text="Sistema de perfis será implementado em breve!", 
-                font=("Segoe UI", 14), bg="", fg=self.colors["text_dim"]).pack(pady=50)
+        tk.Label(container, text="PERFIS", font=("Segoe UI", 24, "bold"), bg="", fg=self.colors["text"]).pack(anchor="w", pady=(0, 30))
+        tk.Label(container, text="Sistema de perfis será implementado em breve!", font=("Segoe UI", 14), bg="", fg=self.colors["text_dim"]).pack(pady=50)
 
     def create_version_card(self, parent, version):
         card = tk.Frame(parent, bg=self.colors["card"], padx=20, pady=15)
         card.pack(fill="x", pady=10)
-        
         info_frame = tk.Frame(card, bg=self.colors["card"])
         info_frame.pack(side="left", fill="both", expand=True)
-        
-        tk.Label(info_frame, text=f"Minecraft {version}", font=("Segoe UI", 14, "bold"), 
-                bg=self.colors["card"], fg=self.colors["text"]).pack(anchor="w")
-        
+        tk.Label(info_frame, text=f"Minecraft {version}", font=("Segoe UI", 14, "bold"), bg=self.colors["card"], fg=self.colors["text"]).pack(anchor="w")
         status = self.check_version_installed(version)
         status_color = self.colors["success"] if status else self.colors["text_dim"]
         status_text = "✓ Instalado" if status else "Não instalado"
-        
-        tk.Label(info_frame, text=status_text, font=("Segoe UI", 10), 
-                bg=self.colors["card"], fg=status_color).pack(anchor="w")
-        
+        tk.Label(info_frame, text=status_text, font=("Segoe UI", 10), bg=self.colors["card"], fg=status_color).pack(anchor="w")
         btn_frame = tk.Frame(card, bg=self.colors["card"])
         btn_frame.pack(side="right")
-        
         if not status:
-            tk.Button(btn_frame, text="BAIXAR", font=("Segoe UI", 10, "bold"), 
-                     bg=self.colors["accent"], fg="white", bd=0, cursor="hand2",
-                     command=lambda v=version: self.download_version(v),
-                     padx=20, pady=8).pack(side="right", padx=5)
+            tk.Button(btn_frame, text="BAIXAR", font=("Segoe UI", 10, "bold"), bg=self.colors["accent"], fg="white", bd=0, cursor="hand2", command=lambda v=version: self.download_version(v), padx=20, pady=8).pack(side="right", padx=5)
         else:
-            tk.Button(btn_frame, text="DELETAR", font=("Segoe UI", 10, "bold"), 
-                     bg="#FF5252", fg="white", bd=0, cursor="hand2",
-                     command=lambda v=version: self.delete_version(v),
-                     padx=20, pady=8).pack(side="right", padx=5)
+            tk.Button(btn_frame, text="DELETAR", font=("Segoe UI", 10, "bold"), bg=self.colors["error"], fg="white", bd=0, cursor="hand2", command=lambda v=version: self.delete_version(v), padx=20, pady=8).pack(side="right", padx=5)
 
     def create_nav_btn(self, text, command):
-        btn = tk.Button(self.sidebar, text=text, font=("Segoe UI", 10, "bold"), 
-                       bg=self.colors["sidebar"], fg=self.colors["text"], bd=0, 
-                       padx=20, pady=15, anchor="w", cursor="hand2", 
-                       activebackground=self.colors["card"], command=command)
+        btn = tk.Button(self.sidebar, text=text, font=("Segoe UI", 10, "bold"), bg=self.colors["sidebar"], fg=self.colors["text"], bd=0, padx=20, pady=15, anchor="w", cursor="hand2", activebackground=self.colors["card"], command=command)
         btn.pack(fill="x")
 
     def clear_main_area(self):
@@ -277,36 +218,28 @@ class AetherLauncherUI:
         if os.path.exists(self.profiles_file):
             try:
                 with open(self.profiles_file, 'r') as f:
-                    data = json.load(f)
-                    return data.get("username", "Player")
+                    return json.load(f).get("username", "Player")
             except:
                 return "Player"
         return "Player"
 
-    def load_profiles(self):
-        pass  # Username é carregado diretamente
-
+    def load_profiles(self): pass
     def save_profiles(self):
         data = {"username": self.user_entry.get() if hasattr(self, 'user_entry') else "Player"}
         with open(self.profiles_file, 'w') as f:
             json.dump(data, f, indent=4)
 
-    def save_settings(self):
-        messagebox.showinfo("Aether", "Configurações salvas com sucesso!")
-
+    def save_settings(self): messagebox.showinfo("Aether", "Configurações salvas com sucesso!")
     def check_version_installed(self, version):
-        jar_path = os.path.join(self.versions_dir, version, f"{version}.jar")
-        return os.path.exists(jar_path)
+        return os.path.exists(os.path.join(self.versions_dir, version, f"{version}.jar"))
 
     def check_version_status(self):
         if hasattr(self, 'version_status'):
             installed = self.check_version_installed(self.selected_version)
             if installed:
-                self.version_status.config(text="✓ Versão instalada e pronta", 
-                                          fg=self.colors["success"])
+                self.version_status.config(text="✓ Versão instalada e pronta", fg=self.colors["success"])
             else:
-                self.version_status.config(text="⚠ Versão não instalada - clique em BAIXAR", 
-                                          fg=self.colors["warning"])
+                self.version_status.config(text="⚠ Versão não instalada - clique em BAIXAR", fg=self.colors["warning"])
 
     def on_version_change(self):
         self.selected_version = self.version_var.get()
@@ -316,28 +249,19 @@ class AetherLauncherUI:
         if self.downloading:
             messagebox.showwarning("Aether", "Um download já está em andamento!")
             return
-        
         self.downloading = True
-        thread = threading.Thread(target=self._download_version_thread, args=(version,), daemon=True)
-        thread.start()
+        threading.Thread(target=self._download_version_thread, args=(version,), daemon=True).start()
 
     def _download_version_thread(self, version):
         try:
             version_dir = os.path.join(self.versions_dir, version)
             os.makedirs(version_dir, exist_ok=True)
-            
             jar_path = os.path.join(version_dir, f"{version}.jar")
-            url = self.available_versions[version]
-            
             self.root.after(0, lambda: self.update_progress(f"Baixando Minecraft {version}...", 0))
-            
-            # Download com progresso
-            self.download_file(url, jar_path)
-            
+            self.download_file(self.available_versions[version], jar_path)
             self.root.after(0, lambda: self.update_progress(f"✓ Minecraft {version} instalado!", 100))
             self.root.after(0, lambda: messagebox.showinfo("Aether", f"Minecraft {version} instalado com sucesso!"))
             self.root.after(0, self.show_versions_page)
-            
         except Exception as e:
             self.root.after(0, lambda: messagebox.showerror("Erro", f"Falha ao baixar: {str(e)}"))
         finally:
@@ -346,33 +270,24 @@ class AetherLauncherUI:
 
     def download_file(self, url, dest):
         context = ssl._create_unverified_context()
-        headers = {'User-Agent': 'Mozilla/5.0'}
-        req = urllib.request.Request(url, headers=headers)
-        
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
         with urllib.request.urlopen(req, context=context) as response:
             total_size = int(response.headers.get('Content-Length', 0))
-            block_size = 8192
             downloaded = 0
-            
             with open(dest, 'wb') as f:
                 while True:
-                    buffer = response.read(block_size)
-                    if not buffer:
-                        break
+                    buffer = response.read(8192)
+                    if not buffer: break
                     f.write(buffer)
                     downloaded += len(buffer)
-                    
                     if total_size > 0:
-                        progress = int((downloaded / total_size) * 100)
-                        self.root.after(0, lambda p=progress: self.update_progress_bar(p))
+                        self.root.after(0, lambda p=int((downloaded / total_size) * 100): self.update_progress_bar(p))
 
     def delete_version(self, version):
         if messagebox.askyesno("Confirmar", f"Deseja deletar Minecraft {version}?"):
-            version_dir = os.path.join(self.versions_dir, version)
-            if os.path.exists(version_dir):
-                shutil.rmtree(version_dir)
-                messagebox.showinfo("Aether", f"Minecraft {version} deletado!")
-                self.show_versions_page()
+            shutil.rmtree(os.path.join(self.versions_dir, version), ignore_errors=True)
+            messagebox.showinfo("Aether", f"Minecraft {version} deletado!")
+            self.show_versions_page()
 
     def update_progress(self, text, value):
         if hasattr(self, 'progress_label'):
@@ -382,110 +297,51 @@ class AetherLauncherUI:
             self.progress_bar['value'] = value
 
     def update_progress_bar(self, value):
-        if hasattr(self, 'progress_bar'):
-            self.progress_bar['value'] = value
+        if hasattr(self, 'progress_bar'): self.progress_bar['value'] = value
 
     def hide_progress(self):
-        if hasattr(self, 'progress_frame'):
-            self.progress_frame.pack_forget()
+        if hasattr(self, 'progress_frame'): self.progress_frame.pack_forget()
 
     def launch_game(self):
         self.save_profiles()
-        
         if not self.check_version_installed(self.selected_version):
-            response = messagebox.askyesno("Aether", 
-                f"Minecraft {self.selected_version} não está instalado.\n\nDeseja baixá-lo agora?")
-            if response:
+            if messagebox.askyesno("Aether", f"Minecraft {self.selected_version} não está instalado.\n\nDeseja baixá-lo agora?"):
                 self.download_version(self.selected_version)
             return
-        
-        username = self.user_entry.get() or "Player"
-        version = self.selected_version
-        
-        # Lançar Minecraft
-        threading.Thread(target=self._launch_minecraft_thread, 
-                        args=(username, version), daemon=True).start()
+        threading.Thread(target=self._launch_minecraft_thread, args=(self.user_entry.get() or "Player", self.selected_version), daemon=True).start()
 
     def _launch_minecraft_thread(self, username, version):
         try:
-            jar_path = os.path.join(self.versions_dir, version, f"{version}.jar")
-            
-            # Verificar Java
             java_cmd = self.find_java()
             if not java_cmd:
-                self.root.after(0, lambda: messagebox.showerror("Erro", 
-                    "Java não encontrado!\n\nInstale com: sudo pacman -S jre-openjdk"))
+                self.root.after(0, lambda: messagebox.showerror("Erro", "Java não encontrado!"))
                 return
-            
-            # Comando de lançamento
-            cmd = [
-                java_cmd,
-                "-Xmx2G",
-                "-Xms1G",
-                f"-Djava.library.path={self.natives_dir}",
-                "-cp", jar_path,
-                "net.minecraft.client.main.Main",
-                "--username", username,
-                "--version", version,
-                "--gameDir", self.minecraft_dir,
-                "--assetsDir", self.assets_dir
-            ]
-            
-            self.root.after(0, lambda: messagebox.showinfo("Aether", 
-                f"Iniciando Minecraft {version}...\n\nUsuário: {username}"))
-            
-            process = subprocess.Popen(cmd, cwd=self.minecraft_dir,
-                                      stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            
-            # Aguardar o processo
-            process.wait()
-            
+            cmd = [java_cmd, "-Xmx2G", "-Xms1G", f"-Djava.library.path={self.natives_dir}", "-cp", os.path.join(self.versions_dir, version, f"{version}.jar"), "net.minecraft.client.main.Main", "--username", username, "--version", version, "--gameDir", self.minecraft_dir, "--assetsDir", self.assets_dir]
+            self.root.after(0, lambda: messagebox.showinfo("Aether", f"Iniciando Minecraft {version}..."))
+            subprocess.Popen(cmd, cwd=self.minecraft_dir).wait()
         except Exception as e:
-            self.root.after(0, lambda: messagebox.showerror("Erro", 
-                f"Falha ao iniciar Minecraft:\n{str(e)}"))
+            self.root.after(0, lambda: messagebox.showerror("Erro", f"Falha ao iniciar: {str(e)}"))
 
     def find_java(self):
-        """Encontra o executável Java no sistema"""
-        java_paths = [
-            "/usr/bin/java",
-            "/usr/lib/jvm/default/bin/java",
-            "/usr/lib/jvm/java-17-openjdk/bin/java",
-            "/usr/lib/jvm/java-11-openjdk/bin/java",
-            "/usr/lib/jvm/java-8-openjdk/bin/java"
-        ]
-        
-        for path in java_paths:
-            if os.path.exists(path):
-                return path
-        
-        # Tentar via PATH
+        for path in ["/usr/bin/java", "/usr/lib/jvm/default/bin/java"]:
+            if os.path.exists(path): return path
         try:
-            result = subprocess.run(['which', 'java'], capture_output=True, text=True)
-            if result.returncode == 0:
-                return result.stdout.strip()
-        except:
-            pass
-        
-        return None
+            return subprocess.run(['which', 'java'], capture_output=True, text=True).stdout.strip() or None
+        except: return None
 
     def get_remote_version(self):
         try:
-            url = "https://raw.githubusercontent.com/DragonSCPOFICIAL/Arch-Linux/main/AetherLauncher/version.json"
-            headers = {'User-Agent': 'Mozilla/5.0'}
-            context = ssl._create_unverified_context()
-            req = urllib.request.Request(url, headers=headers)
-            with urllib.request.urlopen(req, timeout=10, context=context) as response:
+            req = urllib.request.Request("https://raw.githubusercontent.com/DragonSCPOFICIAL/Arch-Linux/main/AetherLauncher/version.json", headers={'User-Agent': 'Mozilla/5.0'})
+            with urllib.request.urlopen(req, timeout=10, context=ssl._create_unverified_context()) as response:
                 return json.load(response)
-        except:
-            return None
+        except: return None
 
     def silent_update_check(self):
         remote = self.get_remote_version()
-        if remote and remote.get('build', 0) > 2:  # Build 2 é a v2.0.0
-            self.root.after(0, lambda: self.version_lbl.config(
-                text="Nova versão disponível!", fg=self.colors["accent"]))
+        if remote and remote.get('build', 0) > 2:
+            self.root.after(0, lambda: self.version_lbl.config(text="Nova versão disponível!", fg=self.colors["accent"]))
 
 if __name__ == "__main__":
     root = tk.Tk()
-    app = AetherLauncherUI(root)
+    AetherLauncherUI(root)
     root.mainloop()

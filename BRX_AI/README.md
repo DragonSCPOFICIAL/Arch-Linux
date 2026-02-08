@@ -195,10 +195,17 @@ tail -f ~/.brx_ai_app.log
 
 ## 🗑️ Desinstalação
 
-Para remover completamente o BRX AI:
+O BRX AI oferece um processo de desinstalação simplificado e completo:
 
+### 🖱️ Via Interface (Recomendado)
+1. Abra o **BRX AI**.
+2. Vá até a aba **⚙️ Configurações**.
+3. Role até o final na **Zona de Perigo**.
+4. Clique em **DESINSTALAR BRX AI COMPLETAMENTE**.
+
+### 💻 Via Terminal
 ```bash
-sudo /opt/brx_ai_app/uninstall.sh
+sudo bash /opt/brx_ai_app/uninstall.sh
 ```
 
 Ou manualmente:

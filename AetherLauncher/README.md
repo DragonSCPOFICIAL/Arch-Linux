@@ -37,9 +37,17 @@ O **Aether Launcher** é um inicializador de Minecraft otimizado especificamente
 
 ## 🗑️ Desinstalação
 
-Para remover o launcher do sistema:
+O Aether Launcher oferece dois métodos de desinstalação:
+
+### 🖱️ Via Interface (Recomendado)
+1. Abra o **Aether Launcher**.
+2. Vá até a aba **AJUSTES**.
+3. Role até o final na **Zona de Perigo**.
+4. Clique em **DESINSTALAR AETHER LAUNCHER**.
+
+### 💻 Via Terminal
 ```bash
-sudo bash uninstall.sh
+sudo bash /opt/aetherlauncher/uninstall.sh
 ```
 
 ---
