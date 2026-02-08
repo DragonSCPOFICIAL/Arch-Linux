@@ -42,67 +42,83 @@ def get_gpu_info():
     info = get_system_info()
     return f"GPU: {info['gpu_vendor'].upper()} | RAM: {info['ram_gb']}GB | Cores: {info['cpu_cores']}"
 
-def get_compatibility_env(is_recent=True):
+def get_autotune_profiles():
+    """Retorna os perfis de driver para o sistema de Auto-Tune."""
+    return [
+        {
+            "id": 0,
+            "name": "Nativo (Mesa Otimizado)",
+            "env": {
+                "vblank_mode": "0",
+                "mesa_glthread": "true",
+                "MESA_GL_VERSION_OVERRIDE": "4.6",
+                "MESA_GLSL_VERSION_OVERRIDE": "460"
+            }
+        },
+        {
+            "id": 1,
+            "name": "Zink (Vulkan Translation)",
+            "env": {
+                "MESA_LOADER_DRIVER_OVERRIDE": "zink",
+                "GALLIUM_DRIVER": "zink",
+                "vblank_mode": "0",
+                "MESA_GL_VERSION_OVERRIDE": "4.6"
+            }
+        },
+        {
+            "id": 2,
+            "name": "Compatibilidade Extrema (DRI2)",
+            "env": {
+                "LIBGL_DRI3_DISABLE": "1",
+                "MESA_GL_VERSION_OVERRIDE": "4.3",
+                "MESA_DEBUG": "silent",
+                "vblank_mode": "0"
+            }
+        },
+        {
+            "id": 3,
+            "name": "Software Rendering (CPU Boost)",
+            "env": {
+                "LIBGL_ALWAYS_SOFTWARE": "1",
+                "GALLIUM_DRIVER": "llvmpipe",
+                "vblank_mode": "0"
+            }
+        }
+    ]
+
+def get_compatibility_env(is_recent=True, profile_index=None):
     """
     Configura o ambiente Linux para o conector do Minecraft.
-    is_recent: True para 1.17+, False para versões antigas.
     """
     env = os.environ.copy()
     
-    # Otimizações de driver Mesa (O "segredo" do Linux)
-    # Zink é um driver que traduz OpenGL para Vulkan, excelente para GPUs que pararam no OpenGL 3.x/4.x
-    env["MESA_GL_VERSION_OVERRIDE"] = "4.6" if is_recent else "3.2"
-    env["MESA_GLSL_VERSION_OVERRIDE"] = "460" if is_recent else "150"
+    # Se um perfil de Auto-Tune for especificado, usa ele
+    if profile_index is not None:
+        profiles = get_autotune_profiles()
+        if 0 <= profile_index < len(profiles):
+            env.update(profiles[profile_index]["env"])
+    else:
+        # Configuração padrão robusta
+        env["vblank_mode"] = "0"
+        env["mesa_glthread"] = "true"
+        env["MESA_GL_VERSION_OVERRIDE"] = "4.6" if is_recent else "3.2"
+        env["MESA_GLSL_VERSION_OVERRIDE"] = "460" if is_recent else "150"
     
-    # Tenta forçar o driver Zink para melhor compatibilidade em hardware antigo
-    env["MESA_LOADER_DRIVER_OVERRIDE"] = "zink"
-    env["GALLIUM_DRIVER"] = "zink"
+    # Injeção Universal de Bibliotecas do Sistema
+    sys_paths = ["/usr/lib/x86_64-linux-gnu", "/usr/lib/x86_64-linux-gnu/dri", "/usr/lib64", "/usr/lib"]
+    current_ld = env.get("LD_LIBRARY_PATH", "")
+    env["LD_LIBRARY_PATH"] = ":".join(sys_paths) + (":" + current_ld if current_ld else "")
     
-    # Desabilita sincronização vertical para ganhar FPS e reduzir input lag
-    env["vblank_mode"] = "0"
-    env["__GL_SYNC_TO_VBLANK"] = "0"
+    # Fixes de Interface e Janela (X11)
+    env["_JAVA_AWT_WM_NONREPARENTING"] = "1"
+    env["QT_QPA_PLATFORM"] = "xcb"
+    env["GDK_BACKEND"] = "x11"
     
-    # Otimizações de Memória e Driver para GPUs Fracas
-    env["MESA_DEBUG"] = "silent"
-    env["allow_glsl_extension_directive_mid_shader"] = "true"
-    env["pre_shader_compiler"] = "true"
-    
-    # Otimizações de Memória de Vídeo (VRAM)
-    env["mesa_glthread"] = "true" # Multithreading no driver OpenGL (Ganho de FPS)
-    env["MESA_EXTENSION_MAX_YEAR"] = "2024"
-    env["MESA_GL_VERSION_OVERRIDE"] = "4.6"
-    
-    # Cache de Shaders (Evita stutters em GPUs fracas)
+    # Cache de Shaders
     shader_cache_dir = os.path.expanduser("~/.cache/aetherlauncher/shaders")
     os.makedirs(shader_cache_dir, exist_ok=True)
     env["MESA_SHADER_CACHE_DIR"] = shader_cache_dir
     env["MESA_SHADER_CACHE_MAX_SIZE"] = "1G"
-    
-    # Corrige problemas de interface em algumas distros
-    env["_JAVA_AWT_WM_NONREPARENTING"] = "1"
-    
-    # PODER DO LINUX: Injeção de bibliotecas do sistema para evitar ExceptionInInitializerError
-    # Priorizamos as bibliotecas do sistema (X11, GL, ALSA) sobre as que o MC traz
-    sys_paths = [
-        "/usr/lib/x86_64-linux-gnu",
-        "/usr/lib/x86_64-linux-gnu/dri",
-        "/usr/lib64",
-        "/usr/lib",
-        "/lib/x86_64-linux-gnu"
-    ]
-    
-    current_ld = env.get("LD_LIBRARY_PATH", "")
-    env["LD_LIBRARY_PATH"] = ":".join(sys_paths) + (":" + current_ld if current_ld else "")
-    
-    # Forçar o uso de drivers nativos e desativar verificações de segurança do Java que barram o hardware
-    env["MESA_GL_VERSION_OVERRIDE"] = "4.6"
-    env["MESA_GLSL_VERSION_OVERRIDE"] = "460"
-    env["LIBGL_DRI3_DISABLE"] = "1" # Às vezes o DRI3 causa erro em GPUs velhas, o DRI2 é mais compatível
-    
-    # Garantir que o Java não tente usar o Wayland se estiver dando erro (forçar X11)
-    env["_JAVA_AWT_WM_NONREPARENTING"] = "1"
-    env["QT_QPA_PLATFORM"] = "xcb"
-    env["GDK_BACKEND"] = "x11"
     
     return env
 
@@ -133,11 +149,9 @@ def get_performance_args():
 
 def get_instance_path(base_dir, profile_name):
     """Cria e retorna o caminho isolado para uma instância, garantindo estrutura completa."""
-    # Sanitizar nome da pasta
     safe_name = "".join([c for c in profile_name if c.isalnum() or c in (' ', '_', '-')]).strip().replace(" ", "_")
     path = os.path.join(base_dir, "instances", safe_name)
     
-    # Criar estrutura de pastas essencial para o Minecraft
     directories = [
         path,
         os.path.join(path, "mods"),

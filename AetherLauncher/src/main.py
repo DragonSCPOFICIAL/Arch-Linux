@@ -339,6 +339,9 @@ class AetherLauncherUI:
         tk.Checkbutton(f_perf, text="Usar Aikar's Flags (Estabilidade de FPS)", variable=self.perf_vars["use_aikar"], bg="#1a1a1a", fg="white", selectcolor="#333", activebackground="#1a1a1a").pack(anchor="w", pady=5)
         tk.Checkbutton(f_perf, text="Prioridade de Processo Alta (Nice/Ionice)", variable=self.perf_vars["use_high_priority"], bg="#1a1a1a", fg="white", selectcolor="#333", activebackground="#1a1a1a").pack(anchor="w", pady=5)
         tk.Checkbutton(f_perf, text="Otimizações de Driver Mesa (Latência Zero)", variable=self.perf_vars["use_mesa_optim"], bg="#1a1a1a", fg="white", selectcolor="#333", activebackground="#1a1a1a").pack(anchor="w", pady=5)
+        
+        self.perf_vars["use_autotune"] = tk.BooleanVar(value=self.data.get("use_autotune", True))
+        tk.Checkbutton(f_perf, text="Auto-Tune Inteligente (Testar e selecionar melhor driver)", variable=self.perf_vars["use_autotune"], bg="#1a1a1a", fg="white", selectcolor="#333", activebackground="#1a1a1a").pack(anchor="w", pady=5)
 
         # Botões de Ação
         btn_frame = tk.Frame(self.active_content_frame, bg="#1a1a1a")
@@ -711,37 +714,45 @@ class AetherLauncherUI:
             # Iniciar processo
             # Adicionar flag para ignorar erros de inicialização de classes se necessário
             final_cmd = cmd
-             # Iniciar processo com monitoramento de GPU
+             # Sistema de Auto-Tune Inteligente
+            if self.data.get("use_autotune", True) and self.data.get("best_profile") is None:
+                print(">>> Iniciando Auto-Tune de Hardware...")
+                profiles = utils.get_autotune_profiles()
+                best_id = 0
+                
+                for profile in profiles:
+                    print(f"    - Testando Perfil: {profile['name']}...")
+                    test_env = utils.get_compatibility_env(is_recent=(era in ["v21", "modern"]), profile_index=profile['id'])
+                    test_env.update(env) # Mantém as outras variáveis
+                    
+                    try:
+                        p_test = subprocess.Popen(cmd, env=test_env, cwd=inst, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                        time.sleep(3) # Espera 3 segundos para ver se crasha
+                        if p_test.poll() is None:
+                            print(f"    - SUCESSO: Perfil {profile['name']} funcionou!")
+                            best_id = profile['id']
+                            p_test.kill()
+                            break
+                        else:
+                            print(f"    - FALHA: Perfil {profile['name']} incompatível.")
+                            p_test.kill()
+                    except: pass
+                
+                self.data["best_profile"] = best_id
+                self.save_launcher_data()
+                env = utils.get_compatibility_env(is_recent=(era in ["v21", "modern"]), profile_index=best_id)
+
+            elif self.data.get("best_profile") is not None:
+                env = utils.get_compatibility_env(is_recent=(era in ["v21", "modern"]), profile_index=self.data["best_profile"])
+
+            # Iniciar processo final
             final_cmd = cmd
             if self.data.get("use_high_priority", True):
-                print(">>> Otimizando prioridade de CPU/Disco...")
                 final_cmd = ["nice", "-n", "0"] + cmd
-                try:
-                    final_cmd = ["ionice", "-c", "2", "-n", "4"] + final_cmd
+                try: final_cmd = ["ionice", "-c", "2", "-n", "4"] + final_cmd
                 except: pass
 
-            print(f">>> Comando final: {' '.join(final_cmd[:10])}...")
-            
-            process = subprocess.Popen(
-                final_cmd,
-                env=env,
-                cwd=inst,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                text=True,
-                bufsize=1
-            )
-            
-            # Adicionar verificação de crash imediato por driver
-            import time
-            time.sleep(1)
-            if process.poll() is not None:
-                # O processo morreu rápido, tentar modo de compatibilidade sem flags agressivas
-                print(">>> Crash detectado (Código 1). Tentando modo de segurança...")
-                # Tenta rodar sem as _JAVA_OPTIONS se falhar
-                if "_JAVA_OPTIONS" in env:
-                    del env["_JAVA_OPTIONS"]
-                process = subprocess.Popen(final_cmd, env=env, cwd=inst, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1)
+            process = subprocess.Popen(final_cmd, env=env, cwd=inst, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1)
             
             print(f">>> Processo iniciado! PID: {process.pid}\n")
             
