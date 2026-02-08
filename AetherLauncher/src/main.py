@@ -16,7 +16,7 @@ ssl._create_default_https_context = ssl._create_unverified_context
 class AetherLauncherUI:
     def __init__(self, root):
         self.root = root
-        self.root.title("Aether Launcher v3.9 - Minecraft Elite Linux (Nativo)")
+        self.root.title("Aether Launcher v4.0 - Minecraft Elite Linux (Nativo)")
         
         # Configuração de Janela
         window_width, window_height = 1050, 680
@@ -76,11 +76,12 @@ class AetherLauncherUI:
             self.mc_versions = ["1.20.1", "1.19.4", "1.12.2"]
 
     def setup_ui(self):
+        # Canvas Principal - Único elemento com fundo real
         self.canvas = tk.Canvas(self.root, width=1050, height=680, highlightthickness=0, bg="black")
         self.canvas.pack(fill="both", expand=True)
         self.load_background()
         
-        # Sidebar Overlay
+        # Sidebar Overlay (Semi-transparente)
         self.canvas.create_rectangle(0, 0, 250, 680, fill="#000000", stipple="gray50", outline="")
         self.canvas.create_text(85, 45, text="BEM-VINDO,", font=("Segoe UI", 7), fill="#ccc", anchor="w")
         self.nick_display = self.canvas.create_text(85, 60, text=self.username, font=("Segoe UI", 11, "bold"), fill="white", anchor="w")
@@ -102,7 +103,7 @@ class AetherLauncherUI:
         self.lbl_ver_info.pack(fill="x", pady=(0, 10))
         self.update_selection_ui()
         
-        # Frame central para telas integradas
+        # Container central - SEM COR DE FUNDO (Transparência total)
         self.content_container = tk.Frame(self.root, bg="", bd=0)
         self.content_window = self.canvas.create_window(650, 340, window=self.content_container, width=750, height=600, anchor="center")
         self.show_home()
@@ -162,12 +163,13 @@ class AetherLauncherUI:
         p = next((x for x in self.profiles if x["id"] == self.selected_pid), self.profiles[0])
         self.lbl_ver_info.config(text=f"{p['type']} {p['version']}")
 
-    def clear_content(self):
+    def clear_content(self, bg_color=""):
         for w in self.content_container.winfo_children(): w.destroy()
-        self.content_container.config(bg="")
+        # Forçamos o fundo do container a ser o que pedirmos (vazio = transparente)
+        self.content_container.config(bg=bg_color)
 
     def show_home(self):
-        self.clear_content()
+        self.clear_content(bg_color="") # Home SEMPRE transparente
         if self.downloading:
             self.prog_ui = tk.Frame(self.content_container, bg="#000000", padx=20, pady=15)
             self.prog_ui.pack(side="bottom", fill="x", padx=100, pady=60)
@@ -177,8 +179,8 @@ class AetherLauncherUI:
             self.prog_bar.pack(fill="x", pady=5)
 
     def show_settings(self):
-        self.clear_content()
-        self.content_container.config(bg="#1a1a1a") # Fundo semi-transparente para leitura
+        # Usamos uma cor escura semi-transparente (ou sólida escura) apenas se necessário para ler o texto
+        self.clear_content(bg_color="#1a1a1a") 
         
         tk.Label(self.content_container, text="CONFIGURAÇÕES", font=("Segoe UI", 18, "bold"), bg="#1a1a1a", fg="white").pack(pady=(40, 20))
         
@@ -196,10 +198,10 @@ class AetherLauncherUI:
         tk.Button(btn_frame, text="SALVAR", bg=self.colors["accent"], fg="white", bd=0, font=("Segoe UI", 10, "bold"), padx=30, pady=10, command=save).pack(side="left", padx=10)
 
     def show_install(self, edit_profile=None):
-        self.clear_content()
-        self.content_container.config(bg="#1a1a1a")
+        # Para a instalação, também usamos o fundo escuro para facilitar a configuração
+        self.clear_content(bg_color="#1a1a1a")
         
-        title = "EDITAR INSTALAÇÃO" if edit_profile else "GERENCIAR INSTALAÇÕES"
+        title = "EDITAR INSTALAÇÃO" if edit_profile else "NOVA INSTALAÇÃO"
         tk.Label(self.content_container, text=title, font=("Segoe UI", 18, "bold"), bg="#1a1a1a", fg="white").pack(pady=(40, 20))
         
         c = tk.Frame(self.content_container, bg="#1a1a1a")
@@ -253,7 +255,7 @@ class AetherLauncherUI:
             elif p["type"] == "Forge":
                 fv = minecraft_launcher_lib.forge.find_forge_version(vid)
                 if fv: minecraft_launcher_lib.forge.install_forge_version(fv, self.mc_dir, callback=cb); final_vid = fv
-            cmd = minecraft_launcher_lib.command.get_minecraft_command(final_vid, self.mc_dir, {"username": self.username, "uuid": "", "token": "", "gameDirectory": inst, "launcherName": "AetherLauncher", "launcherVersion": "3.9"})
+            cmd = minecraft_launcher_lib.command.get_minecraft_command(final_vid, self.mc_dir, {"username": self.username, "uuid": "", "token": "", "gameDirectory": inst, "launcherName": "AetherLauncher", "launcherVersion": "4.0"})
             env = utils.get_compatibility_env() if p.get("compatibility_mode", True) else os.environ.copy()
             self.root.after(0, lambda: self.show_home())
             subprocess.run(cmd, env=env)
