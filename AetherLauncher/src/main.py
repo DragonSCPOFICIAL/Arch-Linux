@@ -15,7 +15,7 @@ ssl._create_default_https_context = ssl._create_unverified_context
 class AetherLauncherUI:
     def __init__(self, root):
         self.root = root
-        self.root.title("Aether Launcher v4.8.3-DEBUG - Minecraft Elite Linux (Nativo)")
+        self.root.title("Aether Launcher v4.8.4-FINAL - Minecraft Elite Linux (Nativo)")
         
         # Configuração de Janela
         window_width, window_height = 1050, 680
