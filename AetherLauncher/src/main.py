@@ -15,7 +15,7 @@ ssl._create_default_https_context = ssl._create_unverified_context
 class AetherLauncherUI:
     def __init__(self, root):
         self.root = root
-        self.root.title("Aether Launcher v4.8.2-HOTFIX - Minecraft Elite Linux (Nativo)")
+        self.root.title("Aether Launcher v4.8.3-DEBUG - Minecraft Elite Linux (Nativo)")
         
         # Configuração de Janela
         window_width, window_height = 1050, 680
@@ -452,6 +452,42 @@ class AetherLauncherUI:
             self.select_profile(self.selected_pid)
         tk.Button(btn_frame, text="SALVAR" if edit_profile else "CRIAR", bg=self.colors["accent"], fg="white", bd=0, font=("Segoe UI", 11, "bold"), pady=12, command=action).pack(side="left", expand=True, fill="x", padx=(5, 0))
 
+    def copy_to_clipboard(self, text):
+        self.root.clipboard_clear()
+        self.root.clipboard_append(text)
+        messagebox.showinfo("Sucesso", "Log de erro copiado para a área de transferência!")
+
+    def show_error_window(self, title, error_summary, full_log):
+        err_win = tk.Toplevel(self.root)
+        err_win.title(title)
+        err_win.geometry("700x550")
+        err_win.configure(bg="#1a1a1a")
+        err_win.transient(self.root)
+        err_win.grab_set()
+        
+        tk.Label(err_win, text="DIAGNÓSTICO DE ERRO", font=("Segoe UI", 14, "bold"), bg="#1a1a1a", fg="#ff5555", pady=10).pack()
+        if error_summary:
+            tk.Label(err_win, text=error_summary, font=("Segoe UI", 10), bg="#1a1a1a", fg="white", wraplength=650, justify="left").pack(padx=20, pady=5)
+        
+        txt_frame = tk.Frame(err_win, bg="#1a1a1a")
+        txt_frame.pack(fill="both", expand=True, padx=20, pady=10)
+        
+        txt = tk.Text(txt_frame, bg="#000", fg="#00ff00", font=("Consolas", 9), wrap="none", insertbackground="white")
+        txt.insert("1.0", full_log)
+        txt.config(state="disabled")
+        
+        scroll_y = tk.Scrollbar(txt_frame, orient="vertical", command=txt.yview)
+        scroll_x = tk.Scrollbar(txt_frame, orient="horizontal", command=txt.xview)
+        txt.configure(yscrollcommand=scroll_y.set, xscrollcommand=scroll_x.set)
+        
+        scroll_y.pack(side="right", fill="y")
+        scroll_x.pack(side="bottom", fill="x")
+        txt.pack(side="left", fill="both", expand=True)
+        
+        btn_copy = tk.Button(err_win, text="📋 COPIAR LOG COMPLETO PARA SUPORTE", bg="#B43D3D", fg="white", font=("Segoe UI", 11, "bold"), 
+                             bd=0, pady=12, cursor="hand2", activebackground="#963232", command=lambda: self.copy_to_clipboard(full_log))
+        btn_copy.pack(fill="x", padx=20, pady=(0, 20))
+
     def launch_game(self):
         if self.downloading or not self.selected_pid: return
         self.downloading = True
@@ -833,12 +869,14 @@ class AetherLauncherUI:
             # Monitorar saída
             def monitor_process():
                 print("=== SAIDA DO MINECRAFT ===\n")
+                full_log = []
                 error_lines = []
                 
                 for line in iter(process.stdout.readline, ''):
                     if line:
                         line_clean = line.rstrip()
                         print(f"[MC] {line_clean}")
+                        full_log.append(line_clean)
                         
                         if "ERROR" in line_clean or "Exception" in line_clean or "FATAL" in line_clean:
                             error_lines.append(line_clean)
@@ -846,16 +884,16 @@ class AetherLauncherUI:
                 process.wait()
                 exit_code = process.returncode
                 
+                log_text = "\n".join(full_log)
                 print(f"\n=== MINECRAFT ENCERRADO (codigo: {exit_code}) ===\n")
                 
                 if exit_code != 0:
-                    error_msg = f"Minecraft encerrou com erro (codigo {exit_code})"
-                    
+                    error_title = f"Minecraft encerrou com erro (codigo {exit_code})"
+                    error_summary = ""
                     if error_lines:
-                        error_msg += f"\n\nErro principal:\n{error_lines[-1][:150]}"
+                        error_summary = f"O launcher detectou falhas críticas durante a inicialização. Use o botão abaixo para copiar o log e enviar para análise."
                     
-                    error_msg += "\n\nVerifique o console para detalhes."
-                    self.root.after(0, lambda: messagebox.showerror("Erro", error_msg))
+                    self.root.after(0, lambda: self.show_error_window(error_title, error_summary, log_text))
             
             threading.Thread(target=monitor_process, daemon=True).start()
             
