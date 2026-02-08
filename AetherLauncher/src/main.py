@@ -725,8 +725,19 @@ class AetherLauncherUI:
                             "--add-opens", "java.base/sun.security.util=ALL-UNNAMED",
                             "--add-opens", "java.base/java.security=ALL-UNNAMED"
                         ])
-                        # Remover flags de performance se estiverem causando conflito na 1.21
-                        if "-XX:MaxTenuringThreshold=1" in java_opts:
+                        # Correção Crítica para 1.21.11+: Conflito de Bibliotecas Nativas (JNA/Netty)
+                        # Versões 1.21.11+ atualizaram bibliotecas que crasham com certas Aikar's Flags no Linux
+                        if vid == "1.21.11":
+                            print(">>> Aplicando Hotfix para 1.21.11: Reduzindo flags de performance para evitar conflito JNA")
+                            # Remover flags problemáticas conhecidas por causar Exit Code 1 nesta versão específica
+                            problematic_flags = [
+                                "-XX:MaxTenuringThreshold=1",
+                                "-XX:G1MixedGCLiveThresholdPercent=90",
+                                "-XX:+AlwaysPreTouch"
+                            ]
+                            for flag in problematic_flags:
+                                if flag in java_opts: java_opts.remove(flag)
+                        elif "-XX:MaxTenuringThreshold=1" in java_opts:
                             java_opts.remove("-XX:MaxTenuringThreshold=1")
                 
                 # Flags para Eras Antigas (Legado e Ancestral)
