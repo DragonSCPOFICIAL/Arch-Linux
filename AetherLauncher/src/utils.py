@@ -1,46 +1,95 @@
 import os
 import subprocess
 import platform
+import shutil
 
 def get_gpu_info():
-    """Retorna informações básicas da GPU para decidir sobre overrides de compatibilidade."""
+    """Retorna informações detalhadas da GPU para otimização do conector."""
     try:
-        res = subprocess.run(['glxinfo', '-B'], capture_output=True, text=True)
+        # Tenta glxinfo primeiro
+        res = subprocess.run(['glxinfo', '-B'], capture_output=True, text=True, timeout=2)
         if res.returncode == 0:
             return res.stdout
     except:
         pass
-    return "Não foi possível detectar a GPU."
+    
+    try:
+        # Fallback para lspci
+        res = subprocess.run(['lspci', '-v', '-s', '$(lspci | grep VGA | cut -d" " -f1)'], capture_output=True, text=True, shell=True)
+        return res.stdout
+    except:
+        return "Não foi possível detectar detalhes da GPU. Usando configurações genéricas de compatibilidade."
 
-def get_compatibility_env():
-    """Retorna um dicionário com variáveis de ambiente para melhorar a compatibilidade OpenGL no Linux."""
+def get_compatibility_env(is_recent=True):
+    """
+    Configura o ambiente Linux para o conector do Minecraft.
+    is_recent: True para 1.17+, False para versões antigas.
+    """
     env = os.environ.copy()
-    # Força o uso do driver Mesa para hardware antigo se necessário
-    # Estes overrides ajudam o Minecraft a rodar em placas que não suportam OpenGL 3.3+ nativamente
-    env["MESA_GL_VERSION_OVERRIDE"] = "4.5"
-    env["MESA_GLSL_VERSION_OVERRIDE"] = "450"
-    # Melhora performance em drivers Intel/AMD antigos
+    
+    # Otimizações de driver Mesa (O "segredo" do Linux)
+    # Zink é um driver que traduz OpenGL para Vulkan, excelente para GPUs que pararam no OpenGL 3.x/4.x
+    env["MESA_GL_VERSION_OVERRIDE"] = "4.6" if is_recent else "3.2"
+    env["MESA_GLSL_VERSION_OVERRIDE"] = "460" if is_recent else "150"
+    
+    # Tenta forçar o driver Zink para melhor compatibilidade em hardware antigo
+    env["MESA_LOADER_DRIVER_OVERRIDE"] = "zink"
+    env["GALLIUM_DRIVER"] = "zink"
+    
+    # Desabilita sincronização vertical para ganhar FPS em hardware modesto
     env["vblank_mode"] = "0"
+    
+    # Corrige problemas de interface em algumas distros
+    env["_JAVA_AWT_WM_NONREPARENTING"] = "1"
+    
+    # Prioriza bibliotecas do sistema para evitar conflitos com natives do MC
+    lib_paths = [
+        "/usr/lib/x86_64-linux-gnu/dri",
+        "/usr/lib/x86_64-linux-gnu",
+        "/usr/lib64",
+        "/usr/lib",
+        "/lib/x86_64-linux-gnu"
+    ]
+    env["LD_LIBRARY_PATH"] = ":".join(lib_paths) + (":" + env.get("LD_LIBRARY_PATH", "") if env.get("LD_LIBRARY_PATH") else "")
+    
     return env
 
-def ensure_java_version(version_id):
-    """Verifica e sugere a versão correta do Java baseada na versão do Minecraft."""
-    try:
-        v_num = float(version_id.split('.')[1])
-        if v_num >= 17:
-            return 17
-        elif v_num >= 12:
-            return 11
-        else:
-            return 8
-    except:
-        return 17 # Padrão para versões novas
-
 def get_instance_path(base_dir, profile_name):
-    """Cria e retorna o caminho isolado para uma instância."""
-    path = os.path.join(base_dir, "instances", profile_name.replace(" ", "_"))
-    os.makedirs(path, exist_ok=True)
-    # Criar subpastas padrão para facilitar o usuário
-    for sub in ["mods", "resourcepacks", "shaderpacks", "screenshots", "saves"]:
-        os.makedirs(os.path.join(path, sub), exist_ok=True)
+    """Cria e retorna o caminho isolado para uma instância, garantindo estrutura completa."""
+    # Sanitizar nome da pasta
+    safe_name = "".join([c for c in profile_name if c.isalnum() or c in (' ', '_', '-')]).strip().replace(" ", "_")
+    path = os.path.join(base_dir, "instances", safe_name)
+    
+    # Criar estrutura de pastas essencial para o Minecraft
+    directories = [
+        path,
+        os.path.join(path, "mods"),
+        os.path.join(path, "resourcepacks"),
+        os.path.join(path, "shaderpacks"),
+        os.path.join(path, "screenshots"),
+        os.path.join(path, "saves"),
+        os.path.join(path, "config")
+    ]
+    
+    for d in directories:
+        os.makedirs(d, exist_ok=True)
+        
     return path
+
+def get_java_recommendation(version_id):
+    """Recomenda a versão do Java baseada na versão do Minecraft."""
+    try:
+        parts = version_id.split('.')
+        if len(parts) < 2: return "java-runtime-gamma" # 17+
+        
+        minor = int(parts[1])
+        if minor >= 21:
+            return "java-runtime-delta" # Java 21
+        elif minor >= 17:
+            return "java-runtime-gamma" # Java 17
+        elif minor >= 16:
+            return "java-runtime-alpha" # Java 16
+        else:
+            return "java-runtime-alpha" # Java 8/11 (Mesa runtime costuma agrupar)
+    except:
+        return "java-runtime-gamma"

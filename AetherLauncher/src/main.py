@@ -36,6 +36,10 @@ class AetherLauncherUI:
         self.icons_dir = os.path.join(self.assets_dir, "icons")
         self.avatars_dir = os.path.join(self.assets_dir, "avatars")
         
+        # Garantir que pastas de assets existam
+        os.makedirs(self.icons_dir, exist_ok=True)
+        os.makedirs(self.avatars_dir, exist_ok=True)
+        
         # Cache de Imagens persistente
         self.img_cache = {}
         
@@ -87,11 +91,15 @@ class AetherLauncherUI:
             json.dump(self.data, f, indent=4)
 
     def fetch_versions(self):
+        """Busca versões disponíveis, priorizando as mais recentes."""
         try:
             versions = minecraft_launcher_lib.utils.get_version_list()
-            self.mc_versions = [v['id'] for v in versions if v['type'] == 'release']
-        except:
-            self.mc_versions = ["1.20.1", "1.19.4", "1.12.2"]
+            # Ordenar versões para que as mais novas apareçam primeiro
+            releases = [v['id'] for v in versions if v['type'] == 'release']
+            self.mc_versions = releases
+        except Exception as e:
+            print(f"Erro ao buscar versões: {e}")
+            self.mc_versions = ["1.21", "1.20.1", "1.19.4", "1.18.2", "1.16.5", "1.12.2", "1.8.9"]
 
     def get_photo(self, name, path, size):
         """Carrega e mantém a imagem no cache para evitar coleta de lixo"""
@@ -149,11 +157,20 @@ class AetherLauncherUI:
         self.active_content_frame = None
 
     def update_avatar_display(self):
+        """Atualiza o ícone do avatar na interface."""
         path = os.path.join(self.avatars_dir, self.selected_avatar)
-        # Limpa o cache antigo para forçar recarregamento se necessário
+        if not os.path.exists(path):
+            # Fallback para steve se o avatar selecionado sumiu
+            self.selected_avatar = "steve.png"
+            path = os.path.join(self.avatars_dir, self.selected_avatar)
+            
+        # Limpa o cache antigo para forçar recarregamento
         if "current_avatar" in self.img_cache: del self.img_cache["current_avatar"]
         img = self.get_photo("current_avatar", path, (45, 45))
-        if img: self.avatar_lbl.config(image=img)
+        if img: 
+            self.avatar_lbl.config(image=img)
+        else:
+            self.avatar_lbl.config(image="", text="👤", fg="white", font=("Segoe UI", 12))
 
     def create_sidebar_btn(self, y, text, icon, cmd):
         t_id = self.canvas.create_text(40, y, text=f"{icon}  {text}", font=("Segoe UI", 10, "bold"), fill="white", anchor="w")
@@ -549,11 +566,13 @@ class AetherLauncherUI:
             except:
                 major, minor = 1, 0
             
+            is_recent = (major > 1) or (major == 1 and minor >= 17)
             is_legacy = major == 1 and minor < 13  # Versões antigas
             is_very_old = major == 1 and minor < 6  # Versões muito antigas
             is_ancient = major == 1 and minor < 3   # Versões ancestrais
             
             print(f"\n>>> Classificacao da versao:")
+            print(f"    - Recente (1.17+): {is_recent}")
             print(f"    - Ancestral (< 1.3): {is_ancient}")
             print(f"    - Muito antiga (< 1.6): {is_very_old}")
             print(f"    - Legado (< 1.13): {is_legacy}")
@@ -584,24 +603,14 @@ class AetherLauncherUI:
                 options=options
             )
             
-            # Configurar ambiente Linux
-            env = os.environ.copy()
+            # Configurar ambiente Linux usando o conector otimizado no utils.py
+            env = utils.get_compatibility_env(is_recent=is_recent)
             
-            # Aplicar configurações de compatibilidade
+            # Aplicar configurações extras de compatibilidade se o modo estiver ativo
             if p.get("compatibility_mode", True):
-                print(">>> Aplicando configuracoes de compatibilidade Linux...")
+                print(">>> Aplicando configuracoes de compatibilidade avançadas...")
                 
-                # OpenGL - essencial para todas as versões
-                # Para versões recentes (1.17+), o Minecraft exige OpenGL 3.2 ou 4.4+
-                # Usar Zink se disponível pode ajudar em GPUs antigas
-                env["MESA_GL_VERSION_OVERRIDE"] = "4.6"
-                env["MESA_GLSL_VERSION_OVERRIDE"] = "460"
-                env["MESA_LOADER_DRIVER_OVERRIDE"] = "zink" # Tenta usar Vulkan para OpenGL
-                env["GALLIUM_DRIVER"] = "zink"
-                
-                # Se a placa for muito antiga, o Mesa vai tentar o melhor possível com esses overrides
-                
-                # Forçar software rendering para versões muito antigas
+                # Forçar software rendering para versões muito antigas se necessário
                 if is_ancient:
                     env["LIBGL_ALWAYS_SOFTWARE"] = "1"
                     print("    - Software rendering ativado (versao ancestral)")
@@ -609,9 +618,9 @@ class AetherLauncherUI:
                 # Java options baseadas na versão
                 java_opts = []
                 
-                # Todas as versões - Otimizações para Linux e hardware modesto
+                # Otimizações para Linux e hardware modesto
                 java_opts.extend([
-                    "-Xmx4G", # Aumentado para 4G para versões novas
+                    "-Xmx4G", 
                     "-Xms1G",
                     "-XX:+UnlockExperimentalVMOptions",
                     "-XX:+UseG1GC",
@@ -619,10 +628,9 @@ class AetherLauncherUI:
                     "-XX:G1ReservePercent=20",
                     "-XX:MaxGCPauseMillis=50",
                     "-XX:G1HeapRegionSize=32M",
-                    "-Dsun.java2d.opengl=true", # Forçar OpenGL no Java
+                    "-Dsun.java2d.opengl=true",
                 ])
                 
-                # Versões antigas precisam de configurações especiais
                 if is_legacy:
                     java_opts.extend([
                         "-Djava.net.preferIPv4Stack=true",
@@ -630,7 +638,6 @@ class AetherLauncherUI:
                         "-Dfml.ignorePatchDiscrepancies=true",
                     ])
                 
-                # Versões muito antigas
                 if is_very_old:
                     java_opts.extend([
                         "-Dminecraft.applet.TargetDirectory=" + inst,
@@ -642,7 +649,6 @@ class AetherLauncherUI:
                 if is_legacy:
                     natives_dir = os.path.join(self.mc_dir, "versions", vid, vid + "-natives")
                     if not os.path.exists(natives_dir):
-                        # Tentar encontrar diretório de natives
                         version_dir = os.path.join(self.mc_dir, "versions", vid)
                         if os.path.exists(version_dir):
                             for item in os.listdir(version_dir):
@@ -655,28 +661,10 @@ class AetherLauncherUI:
                             f"-Djava.library.path={natives_dir}",
                             f"-Dorg.lwjgl.librarypath={natives_dir}",
                         ])
-                        print(f"    - Natives configurados: {natives_dir}")
                 
-                # Aplicar opções
+                # Aplicar opções ao ambiente
                 env["_JAVA_OPTIONS"] = " ".join(java_opts)
-                print(f"    - Java options aplicadas ({len(java_opts)} opcoes)")
-            
-            # Library paths - Priorizando drivers do sistema
-            lib_paths = [
-                "/usr/lib/x86_64-linux-gnu/dri",
-                "/usr/lib/x86_64-linux-gnu",
-                "/usr/lib64",
-                "/usr/lib",
-                "/lib/x86_64-linux-gnu",
-                "/usr/lib/i386-linux-gnu",
-            ]
-            
-            # Adicionar natives do Minecraft
-            natives_dir = os.path.join(self.mc_dir, "versions", vid, vid + "-natives")
-            if os.path.exists(natives_dir):
-                lib_paths.insert(0, natives_dir)
-            
-            env["LD_LIBRARY_PATH"] = ":".join(lib_paths)
+                print(f"    - Java options otimizadas aplicadas")
             
             set_status("Iniciando Minecraft...")
             
