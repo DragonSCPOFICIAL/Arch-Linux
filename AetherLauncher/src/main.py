@@ -348,24 +348,90 @@ class AetherLauncherUI:
     def engine_run(self):
         try:
             p = next((x for x in self.profiles if x["id"] == self.selected_pid), None)
-            if not p: return
-            vid = p["version"]; inst = utils.get_instance_path(self.mc_dir, p["name"])
-            cb = {"setStatus": lambda t: self.root.after(0, lambda: self.prog_lbl.config(text=t)), "setProgress": lambda v: self.root.after(0, lambda: self.prog_bar.config(value=v)), "setMax": lambda v: self.root.after(0, lambda: self.prog_bar.config(maximum=v))}
+            if not p: 
+                self.root.after(0, lambda: messagebox.showerror("Erro", "Perfil não encontrado!"))
+                return
+            
+            vid = p["version"]
+            inst = utils.get_instance_path(self.mc_dir, p["name"])
+            
+            # Criar diretório da instância se não existir
+            if not os.path.exists(inst):
+                os.makedirs(inst, exist_ok=True)
+            
+            # Callback para atualizar progresso
+            cb = {
+                "setStatus": lambda t: self.root.after(0, lambda txt=t: self.prog_lbl.config(text=txt)), 
+                "setProgress": lambda v: self.root.after(0, lambda val=v: self.prog_bar.config(value=val)), 
+                "setMax": lambda v: self.root.after(0, lambda val=v: self.prog_bar.config(maximum=val))
+            }
+            
+            # Instalar Minecraft base
+            self.root.after(0, lambda: self.prog_lbl.config(text=f"Baixando Minecraft {vid}..."))
             minecraft_launcher_lib.install.install_minecraft_version(vid, self.mc_dir, callback=cb)
+            
             final_vid = vid
+            
+            # Instalar modloader se necessário
             if p["type"] == "Fabric":
-                fv = minecraft_launcher_lib.fabric.get_latest_loader_version()
-                minecraft_launcher_lib.fabric.install_fabric(vid, self.mc_dir, loader_version=fv, callback=cb)
-                final_vid = minecraft_launcher_lib.fabric.get_fabric_version(vid, fv)
+                self.root.after(0, lambda: self.prog_lbl.config(text="Instalando Fabric..."))
+                try:
+                    fv = minecraft_launcher_lib.fabric.get_latest_loader_version()
+                    minecraft_launcher_lib.fabric.install_fabric(vid, self.mc_dir, loader_version=fv, callback=cb)
+                    final_vid = f"fabric-loader-{fv}-{vid}"
+                except Exception as e:
+                    self.root.after(0, lambda: messagebox.showwarning("Aviso", f"Erro ao instalar Fabric: {e}\nIniciando versão Vanilla."))
+                    
             elif p["type"] == "Forge":
-                fv = minecraft_launcher_lib.forge.find_forge_version(vid)
-                if fv: minecraft_launcher_lib.forge.install_forge_version(fv, self.mc_dir, callback=cb); final_vid = fv
-            cmd = minecraft_launcher_lib.command.get_minecraft_command(final_vid, self.mc_dir, {"username": self.username, "uuid": "", "token": "", "gameDirectory": inst, "launcherName": "AetherLauncher", "launcherVersion": "4.6"})
+                self.root.after(0, lambda: self.prog_lbl.config(text="Instalando Forge..."))
+                try:
+                    fv = minecraft_launcher_lib.forge.find_forge_version(vid)
+                    if fv:
+                        minecraft_launcher_lib.forge.install_forge_version(fv, self.mc_dir, callback=cb)
+                        final_vid = fv
+                    else:
+                        self.root.after(0, lambda: messagebox.showwarning("Aviso", "Forge não disponível para esta versão.\nIniciando versão Vanilla."))
+                except Exception as e:
+                    self.root.after(0, lambda: messagebox.showwarning("Aviso", f"Erro ao instalar Forge: {e}\nIniciando versão Vanilla."))
+            
+            # Preparar comando de inicialização
+            self.root.after(0, lambda: self.prog_lbl.config(text="Preparando para iniciar..."))
+            
+            options = {
+                "username": self.username,
+                "uuid": "",
+                "token": "",
+                "gameDirectory": inst,
+                "launcherName": "AetherLauncher",
+                "launcherVersion": "4.6"
+            }
+            
+            cmd = minecraft_launcher_lib.command.get_minecraft_command(final_vid, self.mc_dir, options)
+            
+            # Configurar ambiente
             env = utils.get_compatibility_env() if p.get("compatibility_mode", True) else os.environ.copy()
+            
+            # Limpar interface
+            self.root.after(0, lambda: self.prog_lbl.config(text="Iniciando Minecraft..."))
+            
+            # Iniciar o jogo
+            subprocess.Popen(cmd, env=env, cwd=inst)
+            
+            # Aguardar um pouco antes de restaurar interface
+            import time
+            time.sleep(2)
+            self.root.after(0, lambda: messagebox.showinfo("Sucesso", "Minecraft iniciado com sucesso!"))
+            
+        except Exception as e:
+            import traceback
+            error_msg = f"Erro ao iniciar Minecraft:\n{str(e)}\n\n{traceback.format_exc()}"
+            print(error_msg)
+            self.root.after(0, lambda: messagebox.showerror("Erro", f"Erro ao iniciar:\n{str(e)}"))
+            
+        finally:
+            self.downloading = False
+            self.root.after(0, lambda: self.btn_play.config(state="normal", text="JOGAR"))
             self.root.after(0, lambda: self.show_home())
-            subprocess.run(cmd, env=env)
-        except Exception as e: self.root.after(0, lambda: messagebox.showerror("Erro", str(e)))
-        finally: self.downloading = False; self.root.after(0, lambda: self.btn_play.config(state="normal", text="JOGAR"))
 
 if __name__ == "__main__":
     root = tk.Tk(); app = AetherLauncherUI(root); root.mainloop()
