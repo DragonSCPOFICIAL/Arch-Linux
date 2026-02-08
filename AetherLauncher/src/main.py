@@ -333,11 +333,27 @@ class AetherLauncherUI:
         def action():
             name, ver = e_n.get().strip(), v_l.get()
             if not name or not ver: return
-            if edit_profile: edit_profile["name"], edit_profile["version"], edit_profile["type"] = name, ver, t_v.get()
+            
+            # Verificar se já existe um perfil com esse nome (exceto o próprio perfil sendo editado)
+            for p in self.profiles:
+                if p["name"] == name and (not edit_profile or p["id"] != edit_profile["id"]):
+                    messagebox.showwarning("Aviso", "Já existe uma instalação com este nome!")
+                    return
+
+            if edit_profile:
+                # Atualizar perfil existente
+                edit_profile["name"] = name
+                edit_profile["version"] = ver
+                edit_profile["type"] = t_v.get()
+                # O ID permanece o mesmo, então não há duplicação
             else:
+                # Criar novo perfil
                 np = {"name": name, "version": ver, "type": t_v.get(), "id": f"p_{os.urandom(3).hex()}", "compatibility_mode": True}
-                self.profiles.append(np); self.selected_pid = np["id"]
-            self.save_launcher_data(); self.select_profile(self.selected_pid)
+                self.profiles.append(np)
+                self.selected_pid = np["id"]
+            
+            self.save_launcher_data()
+            self.select_profile(self.selected_pid)
         tk.Button(btn_frame, text="SALVAR" if edit_profile else "CRIAR", bg=self.colors["accent"], fg="white", bd=0, font=("Segoe UI", 11, "bold"), pady=12, command=action).pack(side="left", expand=True, fill="x", padx=(5, 0))
 
     def launch_game(self):
