@@ -16,7 +16,7 @@ ssl._create_default_https_context = ssl._create_unverified_context
 class AetherLauncherUI:
     def __init__(self, root):
         self.root = root
-        self.root.title("Aether Launcher v4.2 - Minecraft Elite Linux (Nativo)")
+        self.root.title("Aether Launcher v4.3 - Minecraft Elite Linux (Nativo)")
         
         # Configuração de Janela
         window_width, window_height = 1050, 680
@@ -27,17 +27,27 @@ class AetherLauncherUI:
         # Cores
         self.colors = {"accent": "#B43D3D"}
         
-        # Pastas
+        # Pastas e Ativos
+        self.base_dir = os.path.dirname(os.path.dirname(__file__))
         self.config_dir = os.path.expanduser("~/.config/aetherlauncher")
         self.data_file = os.path.join(self.config_dir, "launcher_data.json")
         self.mc_dir = os.path.expanduser("~/.aetherlauncher/minecraft")
-        self.assets_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)))
+        self.assets_dir = os.path.join(self.base_dir, "assets")
+        self.avatars_dir = os.path.join(self.assets_dir, "avatars")
         
         self.load_launcher_data()
         self.downloading = False
         self.mc_versions = []
+        self.cached_images = {}
         
         self.setup_ui()
+        
+        # Se for o primeiro acesso (sem username salvo), mostra tela de boas-vindas
+        if self.username == "Jogador":
+            self.show_welcome_screen()
+        else:
+            self.show_home()
+            
         threading.Thread(target=self.fetch_versions, daemon=True).start()
         
     def load_launcher_data(self):
@@ -53,11 +63,13 @@ class AetherLauncherUI:
         if not self.selected_pid and self.profiles:
             self.selected_pid = self.profiles[0]["id"]
         self.username = self.data.get("username", "Jogador")
+        self.selected_avatar = self.data.get("avatar", "steve.png")
 
     def get_default_data(self):
         return {
             "username": "Jogador",
             "last_profile": "p_default",
+            "avatar": "steve.png",
             "profiles": [
                 {"name": "Minecraft 1.12.2", "version": "1.12.2", "type": "Vanilla", "id": "p_default", "compatibility_mode": True}
             ]
@@ -67,6 +79,7 @@ class AetherLauncherUI:
         self.data["profiles"] = self.profiles
         self.data["last_profile"] = self.selected_pid
         self.data["username"] = self.username
+        self.data["avatar"] = self.selected_avatar
         if not os.path.exists(self.config_dir): os.makedirs(self.config_dir)
         with open(self.data_file, 'w') as f:
             json.dump(self.data, f, indent=4)
@@ -78,6 +91,18 @@ class AetherLauncherUI:
         except:
             self.mc_versions = ["1.20.1", "1.19.4", "1.12.2"]
 
+    def get_image(self, path, size):
+        key = f"{path}_{size[0]}x{size[1]}"
+        if key in self.cached_images: return self.cached_images[key]
+        if os.path.exists(path):
+            try:
+                img = Image.open(path).resize(size, Image.LANCZOS)
+                photo = ImageTk.PhotoImage(img)
+                self.cached_images[key] = photo
+                return photo
+            except: pass
+        return None
+
     def setup_ui(self):
         self.canvas = tk.Canvas(self.root, width=1050, height=680, highlightthickness=0, bg="black")
         self.canvas.pack(fill="both", expand=True)
@@ -88,10 +113,10 @@ class AetherLauncherUI:
         self.canvas.create_text(85, 45, text="BEM-VINDO,", font=("Segoe UI", 7), fill="#ccc", anchor="w")
         self.nick_display = self.canvas.create_text(85, 60, text=self.username, font=("Segoe UI", 11, "bold"), fill="white", anchor="w")
         
-        # Avatar do Usuário (Steve Placeholder)
-        self.avatar_canvas = tk.Canvas(self.root, width=45, height=45, bg="#333", highlightthickness=1, highlightbackground="#555")
-        self.canvas.create_window(47, 52, window=self.avatar_canvas)
-        self.draw_steve_face(self.avatar_canvas)
+        # Avatar do Usuário (Imagem Real)
+        self.avatar_label = tk.Label(self.root, bg="#333", bd=0)
+        self.canvas.create_window(47, 52, window=self.avatar_label, width=45, height=45)
+        self.update_avatar_display()
         
         self.create_sidebar_btn(100, "Configurações", "⚙", self.show_settings)
         self.create_sidebar_btn(140, "Gerenciar Instalações", "+", self.show_install)
@@ -111,31 +136,16 @@ class AetherLauncherUI:
         
         self.active_content_id = None
         self.active_content_frame = None
-        self.show_home()
 
-    def draw_steve_face(self, canvas):
-        # Desenho simples de um rosto de Steve para o avatar
-        canvas.create_rectangle(5, 5, 40, 40, fill="#D8AF84", outline="") # Pele
-        canvas.create_rectangle(5, 5, 40, 15, fill="#5C3B24", outline="") # Cabelo
-        canvas.create_rectangle(10, 20, 18, 25, fill="white", outline="") # Olho E
-        canvas.create_rectangle(14, 20, 18, 25, fill="#454B9E", outline="") # Pupila E
-        canvas.create_rectangle(27, 20, 35, 25, fill="white", outline="") # Olho D
-        canvas.create_rectangle(27, 20, 31, 25, fill="#454B9E", outline="") # Pupila D
-        canvas.create_rectangle(15, 30, 30, 35, fill="#9E5F45", outline="") # Boca
-
-    def draw_grass_block(self, canvas):
-        # Desenho simples de um bloco de grama para as versões
-        canvas.create_rectangle(0, 8, 16, 16, fill="#79553A", outline="") # Terra
-        canvas.create_rectangle(0, 0, 16, 8, fill="#5E9A34", outline="") # Grama
+    def update_avatar_display(self):
+        path = os.path.join(self.avatars_dir, self.selected_avatar)
+        img = self.get_image(path, (45, 45))
+        if img: self.avatar_label.config(image=img)
 
     def load_background(self):
-        bg_path = os.path.join(self.assets_dir, "background.png")
-        if os.path.exists(bg_path):
-            try:
-                img = Image.open(bg_path).resize((1050, 680), Image.LANCZOS)
-                self.bg_image = ImageTk.PhotoImage(img)
-                self.canvas.create_image(0, 0, image=self.bg_image, anchor="nw")
-            except: pass
+        bg_path = os.path.join(self.base_dir, "background.png")
+        img = self.get_image(bg_path, (1050, 680))
+        if img: self.canvas.create_image(0, 0, image=img, anchor="nw")
 
     def create_sidebar_btn(self, y, text, icon, cmd):
         t_id = self.canvas.create_text(40, y, text=f"{icon}  {text}", font=("Segoe UI", 10, "bold"), fill="white", anchor="w")
@@ -149,16 +159,19 @@ class AetherLauncherUI:
             tk.Label(self.profiles_frame, text="Nenhuma instalação", bg="#121212", fg="#555").pack(pady=20)
             return
             
+        grass_path = os.path.join(self.assets_dir, "grass_block.png")
+        grass_img = self.get_image(grass_path, (16, 16))
+        
         for p in self.profiles:
             is_sel = (p["id"] == self.selected_pid)
             bg = "#B43D3D" if is_sel else "#121212"
             f = tk.Frame(self.profiles_frame, bg=bg, padx=10, pady=8)
             f.pack(fill="x", pady=2)
             
-            # Ícone de Bloco de Grama
-            icon_c = tk.Canvas(f, width=16, height=16, bg=bg, highlightthickness=0)
-            icon_c.pack(side="left")
-            self.draw_grass_block(icon_c)
+            # Ícone de Bloco de Grama Real
+            icon_lbl = tk.Label(f, bg=bg, bd=0)
+            if grass_img: icon_lbl.config(image=grass_img)
+            icon_lbl.pack(side="left")
             
             lbl = tk.Label(f, text=p["name"], font=("Segoe UI", 9, "bold" if is_sel else "normal"), bg=bg, fg="white")
             lbl.pack(side="left", padx=8)
@@ -180,7 +193,6 @@ class AetherLauncherUI:
         menu.post(event.x_root, event.y_root)
 
     def delete_profile(self, pid):
-        # Agora permite deletar QUALQUER versão
         if messagebox.askyesno("Confirmar", "Deseja realmente apagar esta instalação?"):
             self.profiles = [p for p in self.profiles if p["id"] != pid]
             if self.selected_pid == pid:
@@ -218,22 +230,70 @@ class AetherLauncherUI:
             self.prog_bar = ttk.Progressbar(self.active_content_frame, mode='determinate')
             self.prog_bar.pack(fill="x", pady=5)
 
-    def show_settings(self):
+    def show_welcome_screen(self):
         self.clear_content()
         self.active_content_frame = tk.Frame(self.root, bg="#1a1a1a", padx=50, pady=50)
-        self.active_content_id = self.canvas.create_window(650, 340, window=self.active_content_frame, width=700, height=500)
+        self.active_content_id = self.canvas.create_window(650, 340, window=self.active_content_frame, width=600, height=400)
         
-        tk.Label(self.active_content_frame, text="CONFIGURAÇÕES", font=("Segoe UI", 18, "bold"), bg="#1a1a1a", fg="white").pack(pady=(40, 20))
-        tk.Label(self.active_content_frame, text="Nickname do Jogador", bg="#1a1a1a", fg="#aaa").pack(anchor="w", padx=100)
+        tk.Label(self.active_content_frame, text="BEM-VINDO AO AETHER", font=("Segoe UI", 20, "bold"), bg="#1a1a1a", fg="white").pack(pady=30)
+        tk.Label(self.active_content_frame, text="Como devemos chamar você?", bg="#1a1a1a", fg="#aaa").pack(pady=5)
+        
+        e_name = tk.Entry(self.active_content_frame, font=("Segoe UI", 14), bg="#333", fg="white", bd=0, insertbackground="white", justify="center")
+        e_name.pack(fill="x", padx=100, pady=20, ipady=10)
+        e_name.focus_set()
+        
+        def start():
+            name = e_name.get().strip()
+            if name:
+                self.username = name
+                self.canvas.itemconfig(self.nick_display, text=self.username)
+                self.save_launcher_data()
+                self.show_home()
+            else: messagebox.showwarning("Aviso", "Por favor, digite um nome.")
+            
+        tk.Button(self.active_content_frame, text="COMEÇAR", bg=self.colors["accent"], fg="white", bd=0, font=("Segoe UI", 12, "bold"), padx=50, pady=12, command=start).pack(pady=20)
+
+    def show_settings(self):
+        self.clear_content()
+        self.active_content_frame = tk.Frame(self.root, bg="#1a1a1a", padx=50, pady=30)
+        self.active_content_id = self.canvas.create_window(650, 340, window=self.active_content_frame, width=750, height=550)
+        
+        tk.Label(self.active_content_frame, text="CONFIGURAÇÕES", font=("Segoe UI", 18, "bold"), bg="#1a1a1a", fg="white").pack(pady=20)
+        
+        # Nickname
+        tk.Label(self.active_content_frame, text="Nickname do Jogador", bg="#1a1a1a", fg="#aaa").pack(anchor="w", padx=50)
         e_nick = tk.Entry(self.active_content_frame, font=("Segoe UI", 12), bg="#333", fg="white", bd=0, insertbackground="white")
-        e_nick.pack(fill="x", padx=100, pady=10, ipady=8); e_nick.insert(0, self.username)
+        e_nick.pack(fill="x", padx=50, pady=10, ipady=8); e_nick.insert(0, self.username)
+        
+        # Seleção de Avatar
+        tk.Label(self.active_content_frame, text="Escolha seu Avatar", bg="#1a1a1a", fg="#aaa").pack(anchor="w", padx=50, pady=(20, 5))
+        avatar_frame = tk.Frame(self.active_content_frame, bg="#1a1a1a")
+        avatar_frame.pack(fill="x", padx=50)
+        
+        self.avatar_var = tk.StringVar(value=self.selected_avatar)
+        avatars = [("Steve", "steve.png"), ("Alex", "alex.png"), ("Herobrine", "herobrine.png")]
+        
+        for name, file in avatars:
+            f = tk.Frame(avatar_frame, bg="#1a1a1a")
+            f.pack(side="left", expand=True)
+            
+            img = self.get_image(os.path.join(self.avatars_dir, file), (64, 64))
+            l = tk.Label(f, image=img, bg="#1a1a1a")
+            l.pack()
+            tk.Radiobutton(f, text=name, variable=self.avatar_var, value=file, bg="#1a1a1a", fg="white", selectcolor="#333").pack()
         
         btn_frame = tk.Frame(self.active_content_frame, bg="#1a1a1a")
-        btn_frame.pack(pady=40)
+        btn_frame.pack(pady=30)
         tk.Button(btn_frame, text="VOLTAR", bg="#444", fg="white", bd=0, font=("Segoe UI", 10, "bold"), padx=30, pady=10, command=self.show_home).pack(side="left", padx=10)
+        
         def save():
-            self.username = e_nick.get().strip() or "Jogador"; self.canvas.itemconfig(self.nick_display, text=self.username)
-            self.save_launcher_data(); self.show_home()
+            self.username = e_nick.get().strip() or "Jogador"
+            self.selected_avatar = self.avatar_var.get()
+            self.canvas.itemconfig(self.nick_display, text=self.username)
+            self.update_avatar_display()
+            self.save_launcher_data()
+            self.show_home()
+            
         tk.Button(btn_frame, text="SALVAR", bg=self.colors["accent"], fg="white", bd=0, font=("Segoe UI", 10, "bold"), padx=30, pady=10, command=save).pack(side="left", padx=10)
 
     def show_install(self, edit_profile=None):
@@ -292,7 +352,7 @@ class AetherLauncherUI:
             elif p["type"] == "Forge":
                 fv = minecraft_launcher_lib.forge.find_forge_version(vid)
                 if fv: minecraft_launcher_lib.forge.install_forge_version(fv, self.mc_dir, callback=cb); final_vid = fv
-            cmd = minecraft_launcher_lib.command.get_minecraft_command(final_vid, self.mc_dir, {"username": self.username, "uuid": "", "token": "", "gameDirectory": inst, "launcherName": "AetherLauncher", "launcherVersion": "4.2"})
+            cmd = minecraft_launcher_lib.command.get_minecraft_command(final_vid, self.mc_dir, {"username": self.username, "uuid": "", "token": "", "gameDirectory": inst, "launcherName": "AetherLauncher", "launcherVersion": "4.3"})
             env = utils.get_compatibility_env() if p.get("compatibility_mode", True) else os.environ.copy()
             self.root.after(0, lambda: self.show_home())
             subprocess.run(cmd, env=env)
