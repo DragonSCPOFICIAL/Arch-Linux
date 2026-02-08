@@ -576,8 +576,14 @@ class AetherLauncherUI:
                 print(">>> Aplicando configuracoes de compatibilidade Linux...")
                 
                 # OpenGL - essencial para todas as versões
-                env["MESA_GL_VERSION_OVERRIDE"] = "3.2"
-                env["MESA_GLSL_VERSION_OVERRIDE"] = "150"
+                # Para versões recentes (1.17+), o Minecraft exige OpenGL 3.2 ou 4.4+
+                # Usar Zink se disponível pode ajudar em GPUs antigas
+                env["MESA_GL_VERSION_OVERRIDE"] = "4.6"
+                env["MESA_GLSL_VERSION_OVERRIDE"] = "460"
+                env["MESA_LOADER_DRIVER_OVERRIDE"] = "zink" # Tenta usar Vulkan para OpenGL
+                env["GALLIUM_DRIVER"] = "zink"
+                
+                # Se a placa for muito antiga, o Mesa vai tentar o melhor possível com esses overrides
                 
                 # Forçar software rendering para versões muito antigas
                 if is_ancient:
@@ -587,15 +593,17 @@ class AetherLauncherUI:
                 # Java options baseadas na versão
                 java_opts = []
                 
-                # Todas as versões
+                # Todas as versões - Otimizações para Linux e hardware modesto
                 java_opts.extend([
-                    "-Xmx2G",
+                    "-Xmx4G", # Aumentado para 4G para versões novas
+                    "-Xms1G",
                     "-XX:+UnlockExperimentalVMOptions",
                     "-XX:+UseG1GC",
                     "-XX:G1NewSizePercent=20",
                     "-XX:G1ReservePercent=20",
                     "-XX:MaxGCPauseMillis=50",
                     "-XX:G1HeapRegionSize=32M",
+                    "-Dsun.java2d.opengl=true", # Forçar OpenGL no Java
                 ])
                 
                 # Versões antigas precisam de configurações especiais
@@ -637,12 +645,13 @@ class AetherLauncherUI:
                 env["_JAVA_OPTIONS"] = " ".join(java_opts)
                 print(f"    - Java options aplicadas ({len(java_opts)} opcoes)")
             
-            # Library paths
+            # Library paths - Priorizando drivers do sistema
             lib_paths = [
-                "/usr/lib",
-                "/usr/lib/x86_64-linux-gnu", 
-                "/lib/x86_64-linux-gnu",
+                "/usr/lib/x86_64-linux-gnu/dri",
+                "/usr/lib/x86_64-linux-gnu",
                 "/usr/lib64",
+                "/usr/lib",
+                "/lib/x86_64-linux-gnu",
                 "/usr/lib/i386-linux-gnu",
             ]
             
