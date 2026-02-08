@@ -48,11 +48,11 @@ class AetherLauncherUI:
         
         # Versões disponíveis
         self.available_versions = {
-            "1.20.1": "https://piston-data.mojang.com/v1/objects/84194a2f286ef7c14ed60ce89ce1596734fd4f85/client.jar",
-            "1.19.4": "https://piston-data.mojang.com/v1/objects/fd19469fed4a4b4c15b2d5133985f0e3e7816a8a/client.jar",
-            "1.18.2": "https://piston-data.mojang.com/v1/objects/c9df48efed58511cdd0213c56b9013a7b5c9ac1f/client.jar",
+            "1.20.1": "https://piston-data.mojang.com/v1/objects/0c3ec587af28e5a785c0b4a7b8a30f9a8f78f838/client.jar",
+            "1.19.4": "https://piston-data.mojang.com/v1/objects/958928a560c9167687bea0cefeb7375da1e552a8/client.jar",
+            "1.18.2": "https://piston-data.mojang.com/v1/objects/2e9a3e3107cca00d6bc9c97bf7d149cae163ef21/client.jar",
             "1.16.5": "https://piston-data.mojang.com/v1/objects/37fd3c903861eeff3bc24b71eed48f828b5269c8/client.jar",
-            "1.8.9": "https://piston-data.mojang.com/v1/objects/2e9a3e07f61bf4f52bf69e6c3e33b4e3e0e0e0f9/client.jar"
+            "1.8.9": "https://launcher.mojang.com/v1/objects/3870888a6c3d349d3771a3e9d16c9bf5e076b908/client.jar"
         }
         
         self.downloading = False
@@ -322,7 +322,10 @@ class AetherLauncherUI:
             self.root.after(0, lambda: messagebox.showinfo("Aether", f"Minecraft {version} instalado com sucesso!"))
             self.root.after(0, lambda: [setattr(self, 'current_page', None), self.show_versions_page()])
         except Exception as e:
-            self.root.after(0, lambda: messagebox.showerror("Erro", f"Falha ao baixar: {str(e)}"))
+            import traceback
+            error_msg = f"Erro: {str(e)}" if str(e) else "Erro desconhecido de conexão"
+            print(f"Erro no download: {traceback.format_exc()}")
+            self.root.after(0, lambda: messagebox.showerror("Erro", f"Falha ao baixar: {error_msg}"))
         finally:
             self.downloading = False
             self.root.after(0, lambda: self.hide_progress())
