@@ -15,7 +15,7 @@ ssl._create_default_https_context = ssl._create_unverified_context
 class AetherLauncherUI:
     def __init__(self, root):
         self.root = root
-        self.root.title("Aether Launcher v4.8.1 - Minecraft Elite Linux (Nativo)")
+        self.root.title("Aether Launcher v4.8.2-HOTFIX - Minecraft Elite Linux (Nativo)")
         
         # Configuração de Janela
         window_width, window_height = 1050, 680
@@ -728,6 +728,7 @@ class AetherLauncherUI:
                         # Correção Crítica para 1.21.11+: Conflito de Bibliotecas Nativas (JNA/Netty)
                         # Versões 1.21.11+ atualizaram bibliotecas que crasham com certas Aikar's Flags no Linux
                         if vid == "1.21.11":
+                            set_status("Aplicando Patch JNA (1.21.11)...")
                             print(">>> Aplicando Hotfix para 1.21.11: Ajustando flags e JNA")
                             # Remover flags problemáticas conhecidas por causar Exit Code 1 nesta versão específica
                             problematic_flags = [
