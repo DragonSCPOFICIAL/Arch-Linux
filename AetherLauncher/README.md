@@ -9,51 +9,38 @@ O **Aether Launcher** é um inicializador de Minecraft otimizado especificamente
 - **Leve e Rápido**: Desenvolvido em Python para baixo consumo de recursos.
 - **Atualizador Integrado**: Sistema de atualização automática.
 
-## 🚀 Instalação no Arch Linux
+## 🚀 Instalação Rápida (Comando Único)
 
-1. **Navegue até o diretório**:
-   ```bash
-   cd AetherLauncher
-   ```
+Para instalar o Aether Launcher agora mesmo, copie e cole o comando abaixo no seu terminal:
 
-2. **Execute o instalador**:
-   ```bash
-   sudo bash install_arch.sh
-   ```
-
-3. **Inicie o Launcher**:
-   - Procure por "Aether Launcher" no seu menu de aplicativos.
-   - Ou digite `aetherlauncher` no terminal.
-
-## 📋 Requisitos
-
-- **Sistema**: Arch Linux
-- **Dependências** (instaladas automaticamente):
-  - `python-pillow`
-  - `python-requests`
-  - `python-pip`
-  - `tk`
-  - `minecraft-launcher-lib` (via pip)
-
-## 🗑️ Desinstalação
-
-O Aether Launcher oferece dois métodos de desinstalação:
-
-### 🖱️ Via Interface (Recomendado)
-1. Abra o **Aether Launcher**.
-2. Vá até a aba **AJUSTES**.
-3. Role até o final na **Zona de Perigo**.
-4. Clique em **DESINSTALAR AETHER LAUNCHER**.
-
-### 💻 Via Terminal
-Para desinstalar completamente o launcher e remover os links do sistema:
 ```bash
-sudo bash /opt/aetherlauncher/uninstall.sh
+git clone https://github.com/DragonSCPOFICIAL/Arch-Linux.git && cd Arch-Linux/AetherLauncher && sudo bash install_arch.sh
 ```
 
-**Opções extras:**
-- Para desinstalação automática (sem perguntas): `sudo bash /opt/aetherlauncher/uninstall.sh --auto`
-- Se você removeu a pasta `/opt`, pode usar o script local: `sudo bash uninstall.sh`
+> **Nota**: Após a instalação, você pode abrir o launcher pelo menu de aplicativos ou digitando `aetherlauncher` no terminal.
+
+## 🗑️ Desinstalação Completa
+
+Escolha uma das formas abaixo para remover o launcher do seu sistema:
+
+### 💻 Via Terminal (Comando Único)
+Este comando remove o launcher, os links do sistema e os atalhos automaticamente:
+
+```bash
+sudo bash /opt/aetherlauncher/uninstall.sh --auto
+```
+
+### 🖱️ Via Interface
+1. Abra o **Aether Launcher**.
+2. Vá até a aba **AJUSTES**.
+3. Na seção **Zona de Perigo**, clique em **DESINSTALAR AETHER LAUNCHER**.
+
+---
+
+## 📋 Requisitos do Sistema
+
+- **Sistema**: Arch Linux (ou derivados como Manjaro, EndeavourOS)
+- **Dependências**: Instaladas automaticamente pelo script (Python 3, Tkinter, Pillow, Requests).
 
 ---
 **Desenvolvido por DragonSCPOFICIAL**
