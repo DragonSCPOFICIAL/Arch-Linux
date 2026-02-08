@@ -114,13 +114,17 @@ class AetherLauncherUI:
         return None
 
     def setup_ui(self):
-        self.canvas = tk.Canvas(self.root, width=1050, height=680, highlightthickness=0, bg="black")
+        self.canvas = tk.Canvas(self.root, width=1050, height=680, highlightthickness=0, bg="#0a0a0a")
         self.canvas.pack(fill="both", expand=True)
         
-        # Fundo
+        # Fundo com efeito de profundidade
         bg_path = os.path.join(self.base_dir, "background.png")
         bg_img = self.get_photo("bg", bg_path, (1050, 680))
-        if bg_img: self.canvas.create_image(0, 0, image=bg_img, anchor="nw")
+        if bg_img: 
+            self.canvas.create_image(0, 0, image=bg_img, anchor="nw")
+        else:
+            # Gradiente de fallback elegante
+            self.canvas.create_rectangle(0, 0, 1050, 680, fill="#121212", outline="")
         
         # Sidebar
         self.canvas.create_rectangle(0, 0, 250, 680, fill="#000000", stipple="gray50", outline="")
@@ -289,6 +293,12 @@ class AetherLauncherUI:
         e_nick = tk.Entry(self.active_content_frame, font=("Segoe UI", 12), bg="#333", fg="white", bd=0, insertbackground="white")
         e_nick.pack(fill="x", padx=50, pady=10, ipady=8); e_nick.insert(0, self.username)
         
+        # Skin URL (Opcional)
+        tk.Label(self.active_content_frame, text="URL da Skin (Opcional)", bg="#1a1a1a", fg="#aaa").pack(anchor="w", padx=50, pady=(10, 0))
+        e_skin = tk.Entry(self.active_content_frame, font=("Segoe UI", 10), bg="#333", fg="white", bd=0, insertbackground="white")
+        e_skin.pack(fill="x", padx=50, pady=5, ipady=5)
+        e_skin.insert(0, self.data.get("skin_url", ""))
+        
         # Seleção de Avatar
         tk.Label(self.active_content_frame, text="Escolha seu Avatar", bg="#1a1a1a", fg="#aaa").pack(anchor="w", padx=50, pady=(20, 5))
         avatar_frame = tk.Frame(self.active_content_frame, bg="#1a1a1a")
@@ -314,6 +324,7 @@ class AetherLauncherUI:
         def save():
             self.username = e_nick.get().strip() or "Jogador"
             self.selected_avatar = self.avatar_var.get()
+            self.data["skin_url"] = e_skin.get().strip()
             self.canvas.itemconfig(self.nick_display, text=self.username)
             self.update_avatar_display()
             self.save_launcher_data()
@@ -376,7 +387,7 @@ class AetherLauncherUI:
     def launch_game(self):
         if self.downloading or not self.selected_pid: return
         self.downloading = True
-        self.btn_play.config(state="disabled", text="INICIANDO...")
+        self.btn_play.config(state="disabled", text="PREPARANDO...")
         
         # Criar interface de progresso ANTES de iniciar o thread
         self.clear_content()
@@ -589,6 +600,11 @@ class AetherLauncherUI:
                 "launcherName": "AetherLauncher",
                 "launcherVersion": "4.6"
             }
+            
+            # Suporte a skin via URL se configurado
+            skin_url = self.data.get("skin_url")
+            if skin_url:
+                options["custom_skin"] = skin_url
             
             # Adicionar executável Java customizado se disponível
             if java_executable and os.path.exists(java_executable):

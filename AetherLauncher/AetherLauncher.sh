@@ -18,8 +18,20 @@ if [ ! -f "$BASE_DIR/src/main.py" ]; then
     exit 1
 fi
 
-# Iniciar a Interface
-python3 "$BASE_DIR/src/main.py" 2>>"$LOG_FILE"
+# Otimizações de Performance para o Launcher
+export MESA_GL_VERSION_OVERRIDE=4.6
+export MESA_GLSL_VERSION_OVERRIDE=460
+export vblank_mode=0
+
+# Iniciar a Interface com prioridade normal (o Minecraft será iniciado com prioridade alta pelo Python)
+echo "Lançando interface..." | tee -a "$LOG_FILE"
+python3 "$BASE_DIR/src/main.py" "$@" 2>>"$LOG_FILE"
+
 if [ $? -ne 0 ]; then
     echo "A interface fechou com erro. Verifique $LOG_FILE para detalhes."
+    # Se falhar, tenta um modo de segurança sem aceleração para a UI
+    if [[ "$*" != *"--safe-mode"* ]]; then
+        echo "Tentando modo de segurança..."
+        LIBGL_ALWAYS_SOFTWARE=1 python3 "$BASE_DIR/src/main.py" --safe-mode 2>>"$LOG_FILE"
+    fi
 fi
