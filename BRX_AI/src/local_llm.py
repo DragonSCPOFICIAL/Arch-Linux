@@ -2,6 +2,7 @@ import os
 import torch
 import json
 from transformers import AutoTokenizer, AutoModelForCausalLM
+from brain_core.intent_map import BRXIntentMapper
 
 class BRXAgentBrain:
     """
@@ -13,12 +14,20 @@ class BRXAgentBrain:
         self.tokenizer = None
         self.model = None
         self.is_loaded = False
+        self.intent_mapper = BRXIntentMapper()
         
-        # Prompts do Sistema para focar em inteligência de agente
+        # Carregar parâmetros locais do brain_core
+        config_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "brain_core/params/agent_config.json")
+        try:
+            with open(config_path, 'r') as f:
+                self.config = json.load(f)
+        except:
+            self.config = {"llm_params": {"temperature": 0.1, "max_new_tokens": 256}}
+
         self.system_prompts = {
-            "reasoning": "Você é o núcleo de raciocínio do BRX AI. Analise o pedido do usuário e decomponha em passos lógicos para execução no Linux. Responda apenas com a lógica, sem saudações.",
-            "code_gen": "Você é um especialista em automação Linux. Gere apenas o comando shell ou script Python necessário para realizar a tarefa. Sem explicações, apenas o código.",
-            "analysis": "Analise o seguinte log/erro do sistema e identifique a causa raiz e a solução imediata."
+            "reasoning": self.config.get("system_identity", "Você é o BRX AI Agent.") + " Analise e decomponha em passos lógicos.",
+            "code_gen": "Gere apenas o comando shell ou script Python necessário. Sem explicações.",
+            "analysis": "Analise o log/erro e identifique a causa e solução."
         }
 
     def load(self):

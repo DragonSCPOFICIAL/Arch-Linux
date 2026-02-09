@@ -1,0 +1,18 @@
+{
+    "agent_name": "BRX_AI_Agent",
+    "version": "2.0.0",
+    "mode": "autonomous_action",
+    "llm_params": {
+        "temperature": 0.1,
+        "top_p": 0.85,
+        "max_new_tokens": 512,
+        "repetition_penalty": 1.1,
+        "stop_sequences": ["###", "User:", "End."]
+    },
+    "action_thresholds": {
+        "auto_execute_shell": false,
+        "require_confirmation": true,
+        "log_level": "DEBUG"
+    },
+    "system_identity": "Você é o BRX AI, um Agente Autônomo para Linux. Seu objetivo é executar tarefas técnicas, gerenciar o sistema e resolver problemas. Você não é um assistente de chat, você é um operador de sistema."
+}
