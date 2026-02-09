@@ -1,67 +1,79 @@
 import json
 import os
 import sys
+import platform
+import subprocess
+import requests
+import datetime
+
+class Colors:
+    HEADER = '\033[95m'
+    BLUE = '\033[94m'
+    GREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
 
 class BRXAgent:
-    def __init__(self, config_path="./brain_core/params/agent_config.json"):
-        self.config_path = config_path
-        self.config = self._load_config()
-        self.name = "BRX AI"
-        self.version = self.config.get("agent_identity", {}).get("version", "1.0.0")
-        self.specializations = self.config.get("agent_identity", {}).get("specialization", [])
-        self.technical_parameters = self.config.get("technical_parameters", [])
+    def __init__(self):
+        self.name = "BRX AI (PROGRAMMER CORE)"
+        self.version = "4.0.0-STABLE"
+        self.model = "deepseek-coder:1.3b"
+        self.api_url = "http://localhost:11434/api/generate"
 
-    def _load_config(self):
-        if not os.path.exists(self.config_path):
-            print(f"[ERRO] Arquivo de configuração não encontrado: {self.config_path}")
-            print("Por favor, execute o motor de evolução para gerar o agent_config.json.")
-            sys.exit(1)
-        with open(self.config_path, 'r') as f:
-            return json.load(f)
+    def log(self, message, type="INFO"):
+        time = datetime.datetime.now().strftime("%H:%M:%S")
+        color = Colors.BLUE if type == "INFO" else Colors.GREEN
+        if type == "AI": color = Colors.HEADER
+        print(f"{Colors.BOLD}[{time}] {color}[{type}]{Colors.ENDC} {message}")
+
+    def ask_ai(self, prompt):
+        """Envia a pergunta para o modelo DeepSeek local."""
+        self.log("Pensando...", "AI")
+        payload = {
+            "model": self.model,
+            "prompt": f"Você é um especialista em Linux, Hardware e Programação. Ajude o usuário com: {prompt}",
+            "stream": False
+        }
+        try:
+            response = requests.post(self.api_url, json=payload, timeout=60)
+            if response.status_code == 200:
+                return response.json().get("response", "Sem resposta do modelo.")
+            return f"Erro na API: {response.status_code}"
+        except Exception as e:
+            return f"Erro de conexão: Certifique-se que o Ollama está rodando. ({str(e)})"
+
+    def execute_shell(self, command):
+        try:
+            self.log(f"Executando: {command}", "SHELL")
+            result = subprocess.run(command, shell=True, capture_output=True, text=True, timeout=30)
+            return result.stdout if result.returncode == 0 else result.stderr
+        except Exception as e:
+            return str(e)
 
     def greet(self):
-        print(f"Olá! Eu sou o {self.name}, versão {self.version}.")
-        print(f"Minhas especializações atuais incluem: {', '.join(self.specializations) if self.specializations else 'nenhuma'}.")
-        print("Como posso ajudar hoje?")
-
-    def process_command(self, command):
-        command = command.lower().strip()
-
-        if "status" in command or "versao" in command:
-            return f"Eu sou o {self.name}, versão {self.version}. Estou operando com {len(self.technical_parameters)} conjuntos de parâmetros técnicos." 
-        elif "especializacoes" in command or "habilidades" in command:
-            if self.specializations:
-                return f"Minhas especializações são: {', '.join(self.specializations)}."
-            else:
-                return "Ainda estou aprendendo novas especializações."
-        elif "deepseek" in command or "parametros" in command:
-            if self.technical_parameters:
-                latest_params = self.technical_parameters[-1].get("data", {})
-                deepseek_info = latest_params.get("architecture_feature", "N/A")
-                lang_opt = latest_params.get("language_optimization", "N/A")
-                kernel_opt = latest_params.get("kernel_optimization", "N/A")
-                return f"Meus parâmetros DeepSeek mais recentes incluem: {deepseek_info}. Também estou otimizado para {lang_opt} e {kernel_opt}."
-            else:
-                return "Ainda não recebi parâmetros técnicos do DeepSeek."
-        elif "ajuda" in command or "comandos" in command:
-            return "Você pode me perguntar sobre 'status', 'versao', 'especializacoes', 'deepseek', 'parametros' ou 'sair'."
-        elif "sair" in command or "tchau" in command:
-            return "Até logo! Continue evoluindo o BRX AI."
-        else:
-            return "Não entendi seu comando. Tente 'ajuda' para ver as opções."
+        print(f"\n{Colors.HEADER}{Colors.BOLD}=== {self.name} ==={Colors.ENDC}")
+        print(f"{Colors.BLUE}Motor:{Colors.ENDC} DeepSeek-Coder (Local)")
+        print(f"{Colors.BLUE}Foco:{Colors.ENDC} Linux Kernel, Hardware & Nova Linguagem")
+        print("-" * 45)
 
     def run(self):
         self.greet()
         while True:
             try:
-                user_input = input("Você: ")
-                if user_input.lower().strip() in ["sair", "tchau", "exit"]:
-                    print(self.process_command(user_input))
+                user_input = input(f"{Colors.BOLD}BRX_AI > {Colors.ENDC}")
+                if not user_input: continue
+                
+                if user_input.lower().startswith("sh "):
+                    print(self.execute_shell(user_input[3:]))
+                elif user_input.lower() in ["sair", "exit"]:
                     break
-                response = self.process_command(user_input)
-                print(f"{self.name}: {response}")
+                else:
+                    # Qualquer outra entrada é tratada como uma pergunta de programação para a IA
+                    response = self.ask_ai(user_input)
+                    print(f"\n{Colors.GREEN}DeepSeek:{Colors.ENDC}\n{response}\n")
             except KeyboardInterrupt:
-                print("\nDesligando o agente BRX AI.")
                 break
 
 if __name__ == "__main__":

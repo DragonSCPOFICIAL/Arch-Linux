@@ -1,91 +1,53 @@
-# BRX AI - Agente Autônomo Nativo para Linux
+# BRX AI - Programmer Core (Nativo & Ilimitado)
 
-O **BRX AI** é um ecossistema de inteligência artificial de alto nível, projetado para operar nativamente no Linux.  
-Ele utiliza arquiteturas avançadas inspiradas no **DeepSeek-V3** para automação de sistemas, desenvolvimento de baixo nível e evolução autônoma de parâmetros.
-
----
-
-## Motor de Evolução Autônoma (Autonomous Engine)
-
-O projeto conta com um **Motor de Evolução Contínua** que minera conhecimentos técnicos e injeta parâmetros reais no núcleo do agente.
-
-### Funcionalidades Atuais
-
-- **Extração DeepSeek Core**: Integração real com parâmetros de arquitetura MoE (Mixture-of-Experts) e MLA (Multi-head Latent Attention).
-- **Expansão Massiva de Conhecimento**: Injeção automática de otimizações para C++, Rust, Assembly e Kernel Linux.
-- **Sincronização GitHub**: Atualizações em tempo real do arquivo `agent_config.json` via automação.
-- **Hardware Aware**: Otimizações focadas em AVX-512, HugePages e IO_uring.
+Este é um agente de engenharia focado exclusivamente em **Desenvolvimento de Software**, **Hardware** e **Kernel Linux**. Ele utiliza o modelo **DeepSeek-Coder** rodando localmente para garantir privacidade total e zero custo de API.
 
 ---
 
-## Brain Core (Núcleo de Inteligência)
-
-O núcleo do agente reside em:
-
-brain_core/params/agent_config.json
-
-Esse arquivo é expandido dinamicamente pelo motor de evolução, aumentando a base de conhecimento técnica e a versão do agente a cada ciclo de análise.
-
-### Parâmetros Monitorados
-
-- **Especializações**  
-  Novas linguagens e técnicas de otimização adquiridas.
-
-- **Technical Parameters**  
-  Logs estruturados de cada nova descoberta injetada.
-
-- **Versão**  
-  Evolução incremental (ex: `3.0.x-CORE`) baseada em novos marcos de conhecimento.
+## 🎯 Foco do Agente
+- **Linguagens**: C, C++, Rust, Python, Assembly e criação de novas linguagens.
+- **Sistemas**: Otimização de Kernel Linux, módulos eBPF e drivers.
+- **Hardware**: Interação com CPU (AVX-512), GPU e gerenciamento de memória.
 
 ---
 
-## Instalação e Uso
+## 🛠️ Instalação Rápida
 
-### 1. Clonar o repositório
+Para configurar o motor de IA e o agente no seu notebook:
 
-git clone git clone https://github.com/DragonSCPOFICIAL/Arch-Linux.git
-
-### 2. Acessar a pasta do projeto
-
-cd BRX_AI
-
-Opcionalmente, se estiver organizando manualmente:
-
+### 1. Clonar e Acessar
+```bash
+git clone https://github.com/DragonSCPOFICIAL/Arch-Linux.git
 cd Arch-Linux/BRX_AI
+```
 
-### 3. Conceder permissão ao instalador
+### 2. Configurar o Motor (DeepSeek Local)
+Este script instalará o Ollama e baixará o modelo `deepseek-coder:1.3b` (~800MB).
+```bash
+chmod +x setup_engine.sh
+./setup_engine.sh
+```
 
-chmod +x install.sh
-
-### 4. Executar o instalador
-
-./install.sh
-
----
-
-## O que a instalação faz
-
-- Configura um ambiente Python isolado.
-- Instala dependências críticas (Torch, Transformers, ferramentas eBPF).
-- Registra o comando `brx-ai` globalmente no sistema.
-- Inicializa o Brain Core e o Motor de Evolução Autônoma.
+### 3. Iniciar o Agente
+```bash
+python3 main.py
+```
 
 ---
 
-## Execução
+## 💻 Comandos do Agente
 
-Após a instalação:
-
-brx-ai
-
----
-
-## Próximos Passos
-
-- Implementação de análise de hardware em tempo real para ajuste fino de parâmetros.
-- Expansão da base de conhecimento para sistemas distribuídos.
-- Integração profunda com o kernel via módulos eBPF.
+| Comando | Descrição |
+| :--- | :--- |
+| `[Pergunta]` | Digite qualquer dúvida de código para a IA (ex: "Como criar um lexer em C?") |
+| `sh [comando]` | Executa comandos diretamente no terminal Linux. |
+| `sair` | Encerra o agente. |
 
 ---
+
+## 🚀 Por que usar esta versão?
+- **Leve**: O modelo ocupa menos de 1GB de disco.
+- **Privado**: Nada sai do seu notebook.
+- **Ilimitado**: Sem taxas de API ou limites de tokens.
 
 **Desenvolvido por DragonSCPOFICIAL & Manus AI**
