@@ -1,26 +1,90 @@
 {
-    "agent_name": "BRX_AI_Agent",
-    "version": "2.0.0",
-    "mode": "autonomous_action",
-    "llm_params": {
-        "temperature": 0.1,
-        "top_p": 0.85,
-        "max_new_tokens": 1024,
-        "repetition_penalty": 1.1,
-        "stop_sequences": ["###", "User:", "End."],
-        "context_management": {
-            "infinite_token_mode": true,
-            "chunk_size": 2048,
-            "overlap": 200,
-            "recursive_summarization": true
+    "agent_identity": {
+        "name": "BRX AI",
+        "codename": "Manus-Linux-Native",
+        "version": "2.5.0-STABLE",
+        "role": "Autonomous System Architect & Language Developer",
+        "base_model": "DeepSeek-Coder-V2-Lite-Instruct",
+        "system_description": "Agente autônomo de nível Manus operando nativamente em ambiente Linux. Especialista em automação de baixo nível, desenvolvimento de compiladores e gestão de infraestrutura via Git."
+    },
+    "llm_inference_engine": {
+        "sampling_params": {
+            "temperature": 0.15,
+            "top_p": 0.9,
+            "top_k": 40,
+            "typical_p": 1.0,
+            "repetition_penalty": 1.15,
+            "presence_penalty": 0.1,
+            "frequency_penalty": 0.1,
+            "mirostat_mode": 2,
+            "mirostat_tau": 5.0,
+            "mirostat_eta": 0.1
+        },
+        "generation_limits": {
+            "max_new_tokens": 2048,
+            "context_window": 32768,
+            "sliding_window_size": 4096,
+            "infinite_token_bridge": true
+        },
+        "stop_conditions": [
+            "### User:",
+            "### Instruction:",
+            "### Response:",
+            "</s>",
+            "<|EOT|>",
+            "End of Action."
+        ]
+    },
+    "context_management_system": {
+        "memory_architecture": "Recursive Summarization & Vector Mapping",
+        "long_term_memory_enabled": true,
+        "session_persistence": true,
+        "knowledge_retrieval": {
+            "enabled": true,
+            "search_depth": 3,
+            "auto_index_repo": true
+        },
+        "token_optimization": {
+            "trim_whitespace": true,
+            "remove_comments_on_analysis": false,
+            "compress_history_threshold": 0.85
         }
     },
-    "action_thresholds": {
-        "auto_execute_shell": false,
-        "require_confirmation": true,
-        "log_level": "DEBUG",
-        "auto_commit": true,
-        "self_expansion_enabled": true
+    "autonomous_action_matrix": {
+        "autonomy_level": 4,
+        "permissions": {
+            "shell_execution": "restricted_auto",
+            "file_system_write": "full_access",
+            "network_access": "monitored",
+            "git_operations": "autonomous_push_pull",
+            "sudo_usage": "require_once_per_session"
+        },
+        "safety_protocols": {
+            "prevent_recursive_deletion": true,
+            "backup_before_critical_edit": true,
+            "dry_run_complex_scripts": true
+        },
+        "self_expansion": {
+            "enabled": true,
+            "auto_refactor_core": true,
+            "language_evolution_priority": "high",
+            "commit_frequency": "on_milestone"
+        }
     },
-    "system_identity": "Você é o BRX AI, um Agente Autônomo para Linux. Seu objetivo é executar tarefas técnicas, gerenciar o sistema e resolver problemas. Você não é um assistente de chat, você é um operador de sistema."
+    "brx_lang_compiler_specs": {
+        "target_version": "0.1.0-ALPHA",
+        "syntax_strictness": 0.8,
+        "optimization_level": "O2",
+        "native_integration": [
+            "bash_bridge",
+            "python_runtime",
+            "systemd_hooks"
+        ]
+    },
+    "logging_and_telemetry": {
+        "log_level": "VERBOSE",
+        "trace_reasoning": true,
+        "save_thought_process": true,
+        "export_logs_to_git": true
+    }
 }
