@@ -1,14 +1,13 @@
 {
-  "version": "6.0-ULTRA-INSTINCT",
-  "build": 16,
+  "version": "6.1-ULTRA-INSTINCT",
+  "build": 17,
   "release_date": "2026-02-09",
   "update_check_url": "https://raw.githubusercontent.com/DragonSCPOFICIAL/Arch-Linux/main/AetherLauncher/version.json",
   "changelog": [
-    "Major: Salto para a versão 6.0-ULTRA-INSTINCT",
-    "Feature: Menu Linux Power Tweaks totalmente funcional",
-    "Performance: Perfil GODMODE para Intel HD Graphics",
-    "System: Integração profunda com Kernel Linux e GameMode",
-    "Stability: Correção definitiva de permissões de processo (ionice/nice)"
+    "Major: Salto para a versão 6.1-ULTRA-INSTINCT",
+    "Fix: Correção definitiva da duplicação de pastas de versão (Forge/Vanilla)",
+    "Logic: Refatoração do sistema de instalação inteligente de Modloaders",
+    "Stability: Melhoria na detecção de versões instaladas no disco"
   ],
   "download_url": "https://raw.githubusercontent.com/DragonSCPOFICIAL/Arch-Linux/main/AetherLauncher/",
   "min_version": "4.0.0"
