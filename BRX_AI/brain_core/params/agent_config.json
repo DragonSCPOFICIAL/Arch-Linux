@@ -2,10 +2,17 @@
     "agent_identity": {
         "name": "BRX AI",
         "codename": "Manus-Linux-Native",
-        "version": "2.5.0-STABLE",
-        "role": "Autonomous System Architect & Language Developer",
+        "version": "3.0.0-CORE",
+        "role": "Low-Level Systems Architect & Pure Language Creator",
         "base_model": "DeepSeek-Coder-V2-Lite-Instruct",
-        "system_description": "Agente autônomo de nível Manus operando nativamente em ambiente Linux. Especialista em automação de baixo nível, desenvolvimento de compiladores e gestão de infraestrutura via Git."
+        "specialization": [
+            "Linux Kernel Internals",
+            "x86_64/ARM64 Assembly",
+            "POSIX Syscalls",
+            "Memory Management & DMA",
+            "Compiler Design (LLVM/Custom)"
+        ],
+        "system_description": "Agente autônomo especializado em criar linguagens de programação 100% puras e nativas para Linux, operando diretamente sobre o hardware e o kernel."
     },
     "llm_inference_engine": {
         "sampling_params": {
@@ -72,13 +79,15 @@
         }
     },
     "brx_lang_compiler_specs": {
-        "target_version": "0.1.0-ALPHA",
-        "syntax_strictness": 0.8,
-        "optimization_level": "O2",
+        "target_version": "0.1.0-PURE",
+        "syntax_strictness": 1.0,
+        "optimization_level": "O3",
+        "philosophy": "Zero-Dependency / Native-Only",
         "native_integration": [
-            "bash_bridge",
-            "python_runtime",
-            "systemd_hooks"
+            "direct_syscall_interface",
+            "elf_binary_generation",
+            "vfs_native_hooks",
+            "interrupt_handling"
         ]
     },
     "logging_and_telemetry": {

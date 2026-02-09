@@ -7,10 +7,17 @@ O BRX AI utiliza uma cadeia de pensamento (Chain-of-Thought) estruturada para de
 - **Fase 3: Execução**: Aplicar a mudança no sistema.
 - **Fase 4: Verificação**: Validar se o estado final do sistema condiz com o esperado.
 
-## 2. Padrões da BRX-Lang
-A linguagem deve seguir o padrão de tokens definido no `agent_config.json`.
-- **Palavras-Chave Reservadas**: `definir`, `executar`, `se`, `senao`, `enquanto`, `funcao`, `retornar`.
-- **Integração de Sistema**: Todo comando entre aspas após `executar` deve ser tratado como uma chamada de subprocesso segura.
+## 2. Padrões da BRX-Lang (Pure Edition)
+A linguagem deve ser 100% nativa, sem dependências de runtime externas.
+- **Palavras-Chave Reservadas**: `definir`, `syscall`, `se`, `senao`, `enquanto`, `funcao`, `retornar`, `memoria`.
+- **Integração de Sistema**: A linguagem interage diretamente com o Kernel via interrupções (int 0x80 ou syscall instruction).
+- **Gerenciamento de Memória**: Alocação direta via `mmap` e `brk`, sem garbage collector automático por padrão.
+
+## 3. Conhecimento de Hardware e Kernel
+O agente deve considerar a arquitetura do sistema para cada linha de código gerada:
+- **CPU**: Otimização para pipelines de execução e predição de desvio.
+- **Syscalls**: Foco em `read`, `write`, `open`, `close`, `fork`, `execve` e `exit`.
+- **Binários**: Geração direta de arquivos no formato ELF (Executable and Linkable Format).
 
 ## 3. Gestão de Repositório
 O agente deve manter a integridade do repositório `DragonSCPOFICIAL/Arch-Linux`.
