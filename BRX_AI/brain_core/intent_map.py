@@ -12,7 +12,10 @@ class BRXIntentMapper:
             "file_manage": r"(crie|leia|edite|delete|arquivo|pasta)\s+(.*)",
             "system_status": r"(status|como está|memória|cpu|uso|hardware)",
             "update_system": r"(atualize|update|upgrade|pacman|system)",
-            "app_launcher": r"(abra|inicie|lançe|app|aplicativo)\s+(.*)"
+            "app_launcher": r"(abra|inicie|lançe|app|aplicativo)\s+(.*)",
+            "lang_define": r"(defina|sintaxe|gramática|linguagem|brx-lang)\s+(.*)",
+            "lang_compile": r"(compile|rode|execute|brx)\s+(.*\.brx)",
+            "self_evolve": r"(evolua|melhore|expanda|auto-update|atualize-se)"
         }
 
     def identify(self, text):

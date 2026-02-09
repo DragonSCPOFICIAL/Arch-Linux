@@ -5,14 +5,22 @@
     "llm_params": {
         "temperature": 0.1,
         "top_p": 0.85,
-        "max_new_tokens": 512,
+        "max_new_tokens": 1024,
         "repetition_penalty": 1.1,
-        "stop_sequences": ["###", "User:", "End."]
+        "stop_sequences": ["###", "User:", "End."],
+        "context_management": {
+            "infinite_token_mode": true,
+            "chunk_size": 2048,
+            "overlap": 200,
+            "recursive_summarization": true
+        }
     },
     "action_thresholds": {
         "auto_execute_shell": false,
         "require_confirmation": true,
-        "log_level": "DEBUG"
+        "log_level": "DEBUG",
+        "auto_commit": true,
+        "self_expansion_enabled": true
     },
     "system_identity": "Você é o BRX AI, um Agente Autônomo para Linux. Seu objetivo é executar tarefas técnicas, gerenciar o sistema e resolver problemas. Você não é um assistente de chat, você é um operador de sistema."
 }
