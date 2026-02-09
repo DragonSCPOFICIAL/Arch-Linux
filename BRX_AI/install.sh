@@ -1,219 +1,72 @@
 #!/bin/bash
 
-# BRX AI App - Instalador para Linux
-# Instala o agente autônomo de IA como aplicativo nativo
-# Mantenedor: DragonSCPOFICIAL
+# --- Configurações --- 
+AGENT_DIR="$(dirname "$(readlink -f "$0")")"
+VENV_DIR="$AGENT_DIR/.venv"
+AGENT_MAIN_SCRIPT="$AGENT_DIR/main.py"
+AGENT_CONFIG_DIR="$AGENT_DIR/brain_core/params"
+AGENT_CONFIG_FILE="$AGENT_CONFIG_DIR/agent_config.json"
+BRX_AI_COMMAND="/usr/local/bin/brx-ai"
 
-# ============================================================================
-# CONFIGURAÇÕES
-# ============================================================================
-APP_NAME="brx_ai_app"
-APP_DISPLAY_NAME="BRX AI Agent"
-INSTALL_DIR="/opt/$APP_NAME"
-BIN_DIR="/usr/local/bin"
-DESKTOP_DIR="$HOME/.local/share/applications"
-ICON_DIR="$HOME/.local/share/icons/hicolor/256x256/apps"
+# --- Funções Auxiliares ---
+log_info() { echo -e "\e[1;34m[INFO]\e[0m $1"; }
+log_success() { echo -e "\e[1;32m[SUCESSO]\e[0m $1"; }
+log_error() { echo -e "\e[1;31m[ERRO]\e[0m $1"; exit 1; }
 
-# Cores para output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+# --- Início da Instalação ---
+log_info "Iniciando instalação do BRX AI..."
 
-# ============================================================================
-# FUNÇÕES AUXILIARES
-# ============================================================================
-print_header() {
-    echo -e "${BLUE}========================================${NC}"
-    echo -e "${BLUE}$1${NC}"
-    echo -e "${BLUE}========================================${NC}"
-}
+# 1. Criar e ativar ambiente virtual Python
+log_info "Criando ambiente virtual Python em $VENV_DIR..."
+python3 -m venv "$VENV_DIR" || log_error "Falha ao criar ambiente virtual."
+source "$VENV_DIR/bin/activate" || log_error "Falha ao ativar ambiente virtual."
+log_success "Ambiente virtual criado e ativado."
 
-print_success() {
-    echo -e "${GREEN}✓ $1${NC}"
-}
+# 2. Instalar dependências Python
+log_info "Instalando dependências Python (torch, transformers, requests)..."
+pip install torch transformers requests || log_error "Falha ao instalar dependências Python."
+log_success "Dependências Python instaladas."
 
-print_error() {
-    echo -e "${RED}✗ $1${NC}"
-}
+# 3. Criar estrutura de diretórios para o agent_config.json se não existir
+log_info "Verificando e criando estrutura de diretórios para o agent_config.json..."
+mkdir -p "$AGENT_CONFIG_DIR" || log_error "Falha ao criar diretório para agent_config.json."
 
-print_warning() {
-    echo -e "${YELLOW}⚠ $1${NC}"
-}
-
-print_info() {
-    echo -e "${BLUE}ℹ $1${NC}"
-}
-
-# ============================================================================
-# VERIFICAÇÕES PRÉ-INSTALAÇÃO
-# ============================================================================
-print_header "Verificações Pré-Instalação"
-
-# Verificar se é Linux
-if [[ ! "$OSTYPE" =~ ^linux ]]; then
-    print_error "Este instalador requer Linux"
-    exit 1
-fi
-print_success "Sistema operacional: Linux"
-
-# Verificar se Python 3 está instalado
-if ! command -v python3 &> /dev/null; then
-    print_error "Python 3 não está instalado"
-    print_info "Instale com: sudo pacman -S python (Arch) ou apt install python3 (Debian/Ubuntu)"
-    exit 1
-fi
-PYTHON_VERSION=$(python3 --version | awk '{print $2}')
-print_success "Python 3 encontrado: $PYTHON_VERSION"
-
-# Verificar se tkinter está disponível
-if ! python3 -c "import tkinter" 2>/dev/null; then
-    print_error "tkinter não está instalado"
-    print_info "Instale com: sudo pacman -S tk (Arch) ou apt install python3-tk (Debian/Ubuntu)"
-    exit 1
-fi
-print_success "tkinter encontrado"
-
-# Verificar se psutil está disponível
-if ! python3 -c "import psutil" 2>/dev/null; then
-    print_warning "psutil não está instalado. Será instalado automaticamente."
-fi
-
-# ============================================================================
-# CRIAR DIRETÓRIOS
-# ============================================================================
-print_header "Criando Diretórios"
-
-# Criar diretório de instalação
-if [ -d "$INSTALL_DIR" ]; then
-    print_warning "Diretório $INSTALL_DIR já existe. Será sobrescrito."
-    sudo rm -rf "$INSTALL_DIR"
-fi
-
-sudo mkdir -p "$INSTALL_DIR"
-print_success "Diretório de instalação criado: $INSTALL_DIR"
-
-sudo mkdir -p "$INSTALL_DIR/src"
-sudo mkdir -p "$INSTALL_DIR/config"
-sudo mkdir -p "$INSTALL_DIR/assets"
-print_success "Subdiretórios criados"
-
-# ============================================================================
-# COPIAR ARQUIVOS
-# ============================================================================
-print_header "Copiando Arquivos"
-
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
-# Copiar arquivos Python
-sudo cp "$SCRIPT_DIR/config.py" "$INSTALL_DIR/"
-sudo cp "$SCRIPT_DIR/src/main.py" "$INSTALL_DIR/src/"
-sudo cp "$SCRIPT_DIR/src/ui.py" "$INSTALL_DIR/src/"
-sudo cp "$SCRIPT_DIR/src/utils.py" "$INSTALL_DIR/src/"
-print_success "Arquivos Python copiados"
-
-# Copiar scripts
-sudo cp "$SCRIPT_DIR/brx_ai_app.sh" "$INSTALL_DIR/"
-sudo chmod +x "$INSTALL_DIR/brx_ai_app.sh"
-print_success "Script de inicialização copiado"
-
-# Copiar README se existir
-if [ -f "$SCRIPT_DIR/README.md" ]; then
-    sudo cp "$SCRIPT_DIR/README.md" "$INSTALL_DIR/"
-    print_success "README copiado"
-fi
-
-# ============================================================================
-# INSTALAR DEPENDÊNCIAS PYTHON
-# ============================================================================
-print_header "Instalando Dependências Python"
-
-# Detectar gerenciador de pacotes
-if command -v pacman &> /dev/null; then
-    print_info "Detectado: Arch Linux (pacman)"
-    sudo pacman -S --noconfirm python-pillow python-requests python-pip 2>/dev/null || true
-    print_success "Dependências do sistema instaladas"
-elif command -v apt &> /dev/null; then
-    print_info "Detectado: Debian/Ubuntu (apt)"
-    sudo apt update
-    sudo apt install -y python3-tk python3-pil python3-requests 2>/dev/null || true
-    print_success "Dependências do sistema instaladas"
+# 4. Criar agent_config.json se não existir
+if [ ! -f "$AGENT_CONFIG_FILE" ]; then
+    log_info "Criando agent_config.json inicial..."
+    echo 
+    "{
+    "agent_identity": {
+        "version": "1.0.0-CORE",
+        "specialization": ["Base System Agent"]
+    },
+    "technical_parameters": [],
+    "logging_and_telemetry": {
+        "last_evolution": "",
+        "evolution_status": "Initialized"
+    }
+}" > "$AGENT_CONFIG_FILE" || log_error "Falha ao criar agent_config.json."
+    log_success "agent_config.json inicial criado."
 else
-    print_warning "Gerenciador de pacotes não detectado. Pulando instalação de dependências do sistema."
+    log_info "agent_config.json já existe. Pulando criação inicial."
 fi
 
-# Instalar psutil via pip
-print_info "Instalando psutil..."
-pip3 install psutil --break-system-packages 2>/dev/null || pip3 install psutil || true
-print_success "Dependências Python instaladas"
+# 5. Tornar o main.py executável e criar link simbólico
+log_info "Tornando main.py executável e criando link simbólico para '$BRX_AI_COMMAND'..."
+chmod +x "$AGENT_MAIN_SCRIPT" || log_error "Falha ao tornar main.py executável."
 
-# ============================================================================
-# CRIAR LINK SIMBÓLICO
-# ============================================================================
-print_header "Criando Link Simbólico"
+# Remover link simbólico antigo se existir
+if [ -L "$BRX_AI_COMMAND" ]; then
+    sudo rm "$BRX_AI_COMMAND" || log_error "Falha ao remover link simbólico antigo."
+fi
 
-# Criar diretório se não existir
-mkdir -p "$BIN_DIR"
+# Criar novo link simbólico
+sudo ln -s "$AGENT_MAIN_SCRIPT" "$BRX_AI_COMMAND" || log_error "Falha ao criar link simbólico."
+log_success "Comando 'brx-ai' configurado globalmente."
 
-# Remover link antigo se existir
-sudo rm -f "$BIN_DIR/$APP_NAME"
+# 6. Desativar ambiente virtual
+deactivate
 
-# Criar novo link
-sudo ln -sf "$INSTALL_DIR/brx_ai_app.sh" "$BIN_DIR/$APP_NAME"
-sudo chmod +x "$BIN_DIR/$APP_NAME"
-print_success "Link simbólico criado: $BIN_DIR/$APP_NAME"
-
-# ============================================================================
-# CRIAR ATALHO NO MENU
-# ============================================================================
-print_header "Criando Atalho no Menu"
-
-mkdir -p "$DESKTOP_DIR"
-
-# Criar arquivo .desktop
-cat > "$DESKTOP_DIR/$APP_NAME.desktop" <<EOF
-[Desktop Entry]
-Version=1.0
-Type=Application
-Name=$APP_DISPLAY_NAME
-Comment=Agente de IA Autônomo com Visão e Controle para Linux
-Exec=$BIN_DIR/$APP_NAME
-Icon=application-x-python
-Terminal=false
-Categories=Utility;Development;AI;Automation;
-Keywords=AI;BRX;Automation;Vision;Agent;
-StartupNotify=true
-EOF
-
-chmod +x "$DESKTOP_DIR/$APP_NAME.desktop"
-print_success "Atalho criado: $DESKTOP_DIR/$APP_NAME.desktop"
-
-# ============================================================================
-# CRIAR DIRETÓRIOS DE CONFIGURAÇÃO
-# ============================================================================
-print_header "Configurando Diretórios do Usuário"
-
-mkdir -p "$HOME/.brx_ai/logs"
-mkdir -p "$HOME/.brx_ai/data"
-mkdir -p "$HOME/.brx_ai/cache"
-print_success "Diretórios de configuração criados em $HOME/.brx_ai"
-
-# ============================================================================
-# FINALIZAÇÃO
-# ============================================================================
-print_header "Instalação Concluída!"
-
-echo ""
-print_success "BRX AI foi instalado com sucesso!"
-echo ""
-print_info "Como usar:"
-echo "  • Terminal: Digite '$APP_NAME' para iniciar"
-echo "  • Menu: Procure por '$APP_DISPLAY_NAME' no menu de aplicativos"
-echo "  • Atalho: Clique no atalho criado em $DESKTOP_DIR"
-echo ""
-print_info "Arquivos de log: $HOME/.brx_ai_app.log"
-print_info "Configurações: $HOME/.brx_ai/"
-echo ""
-print_info "Para desinstalar, execute: sudo $INSTALL_DIR/uninstall.sh"
-echo ""
+log_success "Instalação do BRX AI concluída com sucesso!"
+log_info "Para iniciar o agente, digite: brx-ai"
+log_info "Para rodar o motor de evolução, navegue até a pasta do BRX_AI e execute o script brx_ai_mass_injector.py no seu Colab ou localmente."
