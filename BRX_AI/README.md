@@ -1,78 +1,36 @@
-# BRX AI - Agente Autônomo para Linux
+# BRX AI - Agente Autônomo Nativo para Linux
 
-**BRX AI** é um agente de inteligência artificial autônomo projetado especificamente para Linux, com uma interface nativa moderna inspirada no Manus. O aplicativo funciona como um programa nativo do sistema, oferecendo visão de tela, controle de mouse/teclado e automação de tarefas, agora com suporte a execução local e ilimitada via DeepSeek-Coder.
+O BRX AI é um agente de inteligência artificial de nível "Manus", projetado para rodar nativamente no Linux, utilizando o modelo DeepSeek-Coder localmente para automação de sistema e desenvolvimento de uma nova linguagem de programação.
 
-## 🎯 Características Principais
+## 🚀 Instalação Nativa
 
-- **Interface Moderna**: Design "Modo Prime" com dark mode otimizado.
-- **IA Local e Ilimitada**: Integração com DeepSeek-Coder para processamento offline.
-- **Visão do Sistema**: Monitoramento de tela em tempo real.
-- **Painel de Automação**: Controle de mouse, teclado e terminal.
-- **Instalação Nativa**: Integração completa com o menu de aplicativos do Linux.
+Para instalar o BRX AI como um programa nativo no seu sistema, siga os passos abaixo:
 
-## 📋 Requisitos de Sistema
+1. **Acesse a pasta do projeto**:
+   ```bash
+   cd ~/Arch-Linux/BRX_AI
+   ```
 
-- **Sistema Operacional**: Linux (Arch, Debian/Ubuntu, Fedora, etc.)
-- **Python**: 3.8 ou superior
-- **Hardware Recomendado**: 8GB+ RAM (para rodar o modelo local de 1.3b)
+2. **Torne o instalador executável**:
+   ```bash
+   chmod +x install.sh
+   ```
 
-## 🚀 Instalação e Configuração
+3. **Execute a instalação**:
+   ```bash
+   ./install.sh
+   ```
 
-### 1. Clonar o Repositório
-```bash
-git clone https://github.com/DragonSCPOFICIAL/Arch-Linux.git
-cd Arch-Linux/BRX_AI
-```
+### O que a instalação faz:
+- Cria um ambiente virtual Python isolado.
+- Instala todas as dependências necessárias (Torch, Transformers, Tkinter).
+- Cria um atalho no sistema (`brx-ai`) e um ícone no menu de aplicativos.
 
-### 2. Instalar Dependências
-Para que a IA funcione localmente, instale as bibliotecas necessárias:
-```bash
-pip install -r requirements.txt
-pip install transformers torch accelerate
-```
+## 🧠 Brain Core
+O "Cérebro" do agente está configurado em `brain_core/params/agent_config.json` com suporte a tokens ilimitados e auto-expansão.
 
-### 3. Baixar o Modelo Local (Obrigatório para Modo Offline)
-Execute o script de download para baixar o modelo DeepSeek-Coder (aprox. 2.6GB):
-```bash
-python3 src/download_model.py
-```
-
-### 4. Instalação Nativa no Linux
-Para integrar o BRX AI ao seu sistema como um aplicativo nativo:
-```bash
-sudo bash install.sh
-```
-
-## 💻 Uso
-
-### Iniciar via Terminal
-```bash
-brx_ai_app
-```
-*Ou execute diretamente o núcleo:*
-```bash
-python3 src/main.py
-```
-
-### Iniciar via Menu de Aplicativos
-Procure por **"BRX AI Agent"** no menu do seu ambiente de desktop (GNOME, KDE, XFCE, etc.).
-
-## 📁 Estrutura do Projeto
-
-- `src/main.py`: Núcleo principal e motor da IA.
-- `src/local_llm.py`: Gerenciador do modelo DeepSeek-Coder local.
-- `src/download_model.py`: Script para baixar os pesos do modelo.
-- `src/ui.py`: Interface gráfica em Tkinter.
-- `install.sh`: Script de automação de instalação no Linux.
-
-## 🚀 Roadmap
-
-- [x] Integração com DeepSeek-Coder (Local/Offline)
-- [ ] Suporte a plugins de sistema
-- [ ] Interface de Visão Computacional ativa
-- [ ] Sincronização de contexto entre sessões
-- [ ] Temas customizáveis (Neon/Glassmorphism)
+## 🛠️ Desenvolvimento
+O desenvolvimento da nova linguagem de programação e as ações do agente são gerenciados automaticamente via GitHub.
 
 ---
-
-**Desenvolvido com ❤️ para Linux por DragonSCPOFICIAL**
+**Desenvolvido por DragonSCPOFICIAL**
