@@ -5,6 +5,7 @@ import platform
 import subprocess
 import requests
 import datetime
+import glob
 
 class Colors:
     HEADER = '\033[95m'
@@ -31,11 +32,13 @@ class BRXAgent:
     def ask_ai(self, prompt):
         """Envia a pergunta para o modelo DeepSeek local."""
         self.log("Pensando...", "AI")
+        repo_context = self.get_repo_context()
         payload = {
             "model": self.model,
-            "prompt": f"Você é um especialista em Linux, Hardware e Programação. Ajude o usuário com: {prompt}",
+            "prompt": f"Você é um especialista em Linux, Hardware e Programação. Ajude o usuário com: {prompt}\n\nContexto do Repositório:\n{repo_context}",
             "stream": False
         }
+
         try:
             response = requests.post(self.api_url, json=payload, timeout=60)
             if response.status_code == 200:
@@ -43,6 +46,64 @@ class BRXAgent:
             return f"Erro na API: {response.status_code}"
         except Exception as e:
             return f"Erro de conexão: Certifique-se que o Ollama está rodando. ({str(e)})"
+
+    def read_file(self, filepath):
+        try:
+            with open(filepath, 'r') as f:
+                return f.read()
+        except Exception as e:
+            return f"Erro ao ler arquivo: {str(e)}"
+
+    def write_file(self, filepath, content):
+        try:
+            with open(filepath, 'w') as f:
+                f.write(content)
+            return f"Arquivo {filepath} escrito com sucesso."
+        except Exception as e:
+            return f"Erro ao escrever arquivo: {str(e)}"
+
+    def git_command(self, command):
+        try:
+            self.log(f"Executando Git: {command}", "GIT")
+            result = subprocess.run(command, shell=True, capture_output=True, text=True, timeout=60)
+            if result.returncode == 0:
+                return result.stdout
+            else:
+                return f"Erro Git: {result.stderr}"
+        except Exception as e:
+            return f"Erro ao executar comando Git: {str(e)}"
+
+    def list_repo_files(self):
+        self.log("Listando arquivos do repositório...", "INFO")
+        try:
+            # Usar glob para listar todos os arquivos no diretório atual e subdiretórios
+            # Excluir o diretório .git para evitar listar arquivos internos do Git
+            all_files = [f for f in glob.glob("**", recursive=True) if ".git" not in f and os.path.isfile(f)]
+            return "\n".join(all_files)
+        except Exception as e:
+            return f"Erro ao listar arquivos do repositório: {str(e)}"
+
+    def get_repo_context(self):
+        self.log("Gerando contexto do repositório...", "INFO")
+        context = "Arquivos no repositório BRX_AI:\n"
+        try:
+            all_files = [f for f in glob.glob("**", recursive=True) if ".git" not in f and os.path.isfile(f)]
+            for f in all_files:
+                context += f"- {f}\n"
+            
+            # Adicionar contexto do repositório ULX se ele existir no mesmo nível de diretório
+            ulx_path = "../ULX-Repo" # Ajuste conforme a estrutura local do usuário
+            if os.path.exists(ulx_path):
+                context += "\nRepositório de Referência (ULX):\n"
+                ulx_files = [f for f in glob.glob(f"{ulx_path}/**", recursive=True) if ".git" not in f and os.path.isfile(f)]
+                for f in ulx_files[:20]: # Limitar a 20 arquivos para não estourar o contexto
+                    context += f"- {f}\n"
+                if len(ulx_files) > 20:
+                    context += f"... e mais {len(ulx_files) - 20} arquivos.\n"
+            
+            return context
+        except Exception as e:
+            return f"Erro ao gerar contexto do repositório: {str(e)}"
 
     def execute_shell(self, command):
         try:
@@ -67,6 +128,25 @@ class BRXAgent:
                 
                 if user_input.lower().startswith("sh "):
                     print(self.execute_shell(user_input[3:]))
+                elif user_input.lower().startswith("read "):
+                    print(self.read_file(user_input[5:]))
+                elif user_input.lower().startswith("write "):
+                    parts = user_input[6:].split(" ", 1)
+                    if len(parts) == 2:
+                        filepath, content = parts
+                        print(self.write_file(filepath, content))
+                    else:
+                        print("Uso: write <filepath> <content>")
+                elif user_input.lower() == "lsfiles":
+                    print(self.list_repo_files())
+                elif user_input.lower().startswith("summarize "):
+                    filepath_to_summarize = user_input[10:]
+                    summary_output = self.execute_shell(f"python3 summarize_file.py {filepath_to_summarize}")
+                    print(summary_output)
+                elif user_input.lower() == "context":
+                    print(self.get_repo_context())
+                elif user_input.lower().startswith("git "):
+                    print(self.git_command(user_input[4:]))
                 elif user_input.lower() in ["sair", "exit"]:
                     break
                 else:

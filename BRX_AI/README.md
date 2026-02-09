@@ -1,6 +1,8 @@
-# BRX AI - Programmer Core (Nativo & Ilimitado)
+# BRX AI - Autonomous Programmer Core (Nativo & Ilimitado)
 
 Este é um agente de engenharia focado exclusivamente em **Desenvolvimento de Software**, **Hardware** e **Kernel Linux**. Ele utiliza o modelo **DeepSeek-Coder** rodando localmente para garantir privacidade total e zero custo de API.
+
+Agora, o BRX AI evoluiu para um **Agente Autônomo**, capaz de gerenciar seu próprio repositório Git, ler e editar arquivos, e manter o contexto completo do projeto.
 
 ---
 
@@ -8,6 +10,7 @@ Este é um agente de engenharia focado exclusivamente em **Desenvolvimento de So
 - **Linguagens**: C, C++, Rust, Python, Assembly e criação de novas linguagens.
 - **Sistemas**: Otimização de Kernel Linux, módulos eBPF e drivers.
 - **Hardware**: Interação com CPU (AVX-512), GPU e gerenciamento de memória.
+- **Automação**: Gerenciamento autônomo de repositórios Git e edição de código.
 
 ---
 
@@ -39,13 +42,21 @@ python3 main.py
 
 | Comando | Descrição |
 | :--- | :--- |
-| `[Pergunta]` | Digite qualquer dúvida de código para a IA (ex: "Como criar um lexer em C?") |
+| `[Pergunta]` | Digite qualquer dúvida de código para a IA. Ela agora tem contexto do repositório! |
 | `sh [comando]` | Executa comandos diretamente no terminal Linux. |
+| `read [arquivo]` | Lê o conteúdo de um arquivo específico. |
+| `write [arquivo] [conteúdo]` | Escreve ou sobrescreve um arquivo. |
+| `lsfiles` | Lista todos os arquivos do repositório. |
+| `summarize [arquivo]` | Gera um resumo inteligente do conteúdo de um arquivo. |
+| `context` | Mostra o contexto atual que a IA está utilizando. |
+| `git [comando]` | Executa comandos Git (ex: `git status`, `git commit -m "..."`). |
 | `sair` | Encerra o agente. |
 
 ---
 
 ## 🚀 Por que usar esta versão?
+- **Autônomo**: O agente pode gerenciar o código e o repositório por conta própria.
+- **Consciente**: A IA entende a estrutura do seu projeto através do contexto automático.
 - **Leve**: O modelo ocupa menos de 1GB de disco.
 - **Privado**: Nada sai do seu notebook.
 - **Ilimitado**: Sem taxas de API ou limites de tokens.
