@@ -590,40 +590,10 @@ class AetherLauncherUI:
                 "setMax": set_max
             }
             
-            print(f"\n[DOWNLOAD] Iniciando download do Minecraft {vid}...")
-            set_status(f"Baixando Minecraft {vid}...")
-            
-            minecraft_launcher_lib.install.install_minecraft_version(
-                version=vid,
-                minecraft_directory=self.mc_dir,
-                callback=callback
-            )
-            
-            print(f"[DOWNLOAD] Minecraft {vid} baixado com sucesso!")
-            
             final_vid = vid
             
-            # === INSTALAÇÃO DE MODLOADERS ===
-            if p["type"] == "Fabric":
-                print(f"\n[MODLOADER] Instalando Fabric...")
-                set_status("Instalando Fabric...")
-                try:
-                    fabric_loader = minecraft_launcher_lib.fabric.get_latest_loader_version()
-                    print(f"[FABRIC] Versão do loader: {fabric_loader}")
-                    
-                    minecraft_launcher_lib.fabric.install_fabric(
-                        minecraft_version=vid,
-                        minecraft_directory=self.mc_dir,
-                        loader_version=fabric_loader,
-                        callback=callback
-                    )
-                    final_vid = f"fabric-loader-{fabric_loader}-{vid}"
-                    print(f"[FABRIC] ✓ Instalado! ID final: {final_vid}")
-                except Exception as e:
-                    print(f"[FABRIC] ✗ Erro: {e}")
-                    final_vid = vid
-                    
-            elif p["type"] == "Forge":
+            # === LÓGICA DE INSTALAÇÃO INTELIGENTE (EVITA DUPLICAÇÃO) ===
+            if p["type"] == "Forge":
                 print(f"\n[FORGE-MODULE] Iniciando busca por Forge {vid}...")
                 set_status("Preparando Forge...")
                 try:
@@ -631,10 +601,8 @@ class AetherLauncherUI:
                     versions_dir = os.path.join(self.mc_dir, "versions")
                     found_on_disk = False
                     if os.path.exists(versions_dir):
-                        # Ordenar para pegar a versão mais recente/específica se houver múltiplas
                         folders = sorted(os.listdir(versions_dir), reverse=True)
                         for folder in folders:
-                            # Verifica se a pasta contém a versão base e a palavra 'forge'
                             if vid in folder and "forge" in folder.lower():
                                 json_path = os.path.join(versions_dir, folder, f"{folder}.json")
                                 if os.path.exists(json_path):
@@ -643,19 +611,36 @@ class AetherLauncherUI:
                                     found_on_disk = True
                                     break
                     
-                    # 2. Se não achou no disco, tenta encontrar o ID oficial e instalar
+                    # 2. Se não achou no disco, instala o Forge (isso já baixa as dependências vanilla necessárias)
                     if not found_on_disk:
                         forge_id = minecraft_launcher_lib.forge.find_forge_version(vid)
                         if forge_id:
-                            print(f"[FORGE-MODULE] Instalando via biblioteca: {forge_id}")
+                            print(f"[FORGE-MODULE] Instalando Forge: {forge_id}")
+                            set_status(f"Instalando Forge {vid}...")
                             minecraft_launcher_lib.forge.install_forge_version(forge_id, self.mc_dir, callback=callback)
                             final_vid = forge_id
                         else:
-                            print(f"[FORGE-MODULE] ✗ Forge não encontrado para {vid}")
-                            final_vid = vid
+                            print(f"[FORGE-MODULE] ✗ Forge não encontrado para {vid}, usando Vanilla")
+                            p["type"] = "Vanilla" # Fallback para vanilla se o forge falhar
                 except Exception as e:
                     print(f"[FORGE-MODULE] ⚠ Erro no módulo Forge: {e}")
-                    final_vid = vid
+
+            if p["type"] == "Fabric":
+                print(f"\n[MODLOADER] Instalando Fabric...")
+                set_status("Instalando Fabric...")
+                try:
+                    fabric_loader = minecraft_launcher_lib.fabric.get_latest_loader_version()
+                    minecraft_launcher_lib.fabric.install_fabric(vid, self.mc_dir, loader_version=fabric_loader, callback=callback)
+                    final_vid = f"fabric-loader-{fabric_loader}-{vid}"
+                except Exception as e:
+                    print(f"[FABRIC] ✗ Erro: {e}")
+
+            # 3. Download Vanilla (Apenas se for Vanilla puro ou se o modloader não foi instalado)
+            if p["type"] == "Vanilla":
+                print(f"\n[DOWNLOAD] Iniciando download do Minecraft {vid}...")
+                set_status(f"Baixando Minecraft {vid}...")
+                minecraft_launcher_lib.install.install_minecraft_version(vid, self.mc_dir, callback=callback)
+                final_vid = vid
             
             # === JAVA RUNTIME ===
             set_status("Verificando Java Runtime...")
