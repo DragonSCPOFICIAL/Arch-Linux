@@ -14,44 +14,56 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from config import APP_NAME, APP_VERSION, WINDOW_WIDTH, WINDOW_HEIGHT
 from utils import logger, setup_logger
 from ui import create_interface
-from src.local_llm import LocalDeepSeekCoder
+from src.local_llm import BRXAgentBrain
+from src.agent_actions import BRXActionExecutor
 
 # ============================================================================
 # CLASSE DO ENGINE DE IA
 # ============================================================================
 class BRXAIEngine:
-    """Motor principal da IA com suporte a modelo local DeepSeek-Coder"""
+    """Motor do Agente BRX focado em ações e raciocínio técnico"""
     
     def __init__(self):
-        """Inicializa o engine de IA"""
+        """Inicializa o engine do agente"""
         self.logger = setup_logger("BRXAIEngine")
-        self.local_llm = LocalDeepSeekCoder()
+        self.brain = BRXAgentBrain()
+        self.executor = BRXActionExecutor()
         self.model_loaded = False
-        self.logger.info("BRX AI Engine inicializado")
+        self.logger.info("BRX Agent Engine inicializado")
     
     def load_local_model(self):
-        """Tenta carregar o modelo local"""
-        success, message = self.local_llm.load()
+        """Carrega o cérebro da IA"""
+        success, message = self.brain.load()
         if success:
             self.model_loaded = True
-            self.logger.info("DeepSeek-Coder carregado localmente.")
-        else:
-            self.logger.warning(f"Falha ao carregar modelo local: {message}")
         return success, message
 
+    def handle_request(self, user_input):
+        """
+        Fluxo de Agente: 
+        1. Pensar (Raciocínio)
+        2. Agir (Execução se necessário)
+        3. Reportar
+        """
+        if not self.model_loaded:
+            return "Aguardando carregamento do modelo local para agir..."
+
+        # 1. Fase de Pensamento
+        self.logger.info(f"Agente pensando sobre: {user_input}")
+        plan = self.brain.think(user_input, task_type="reasoning")
+        
+        # 2. Fase de Decisão de Código (se o plano envolver execução)
+        if "comando" in plan.lower() or "executar" in plan.lower():
+            code = self.brain.think(user_input, task_type="code_gen")
+            # Aqui poderíamos pedir confirmação na UI antes de executar
+            # success, output = self.executor.execute_shell(code)
+            return f"Plano do Agente:\n{plan}\n\nCódigo Sugerido:\n{code}"
+        
+        return f"Raciocínio do Agente:\n{plan}"
+
     def process(self, user_input):
-        """Processa entrada do usuário"""
-        self.logger.info(f"Processando: {user_input}")
-        
-        if self.model_loaded:
-            try:
-                response = self.local_llm.generate(user_input)
-                return response
-            except Exception as e:
-                self.logger.error(f"Erro na geração local: {e}")
-                return f"Erro ao gerar resposta local: {e}"
-        
-        return f"BRX AI (Modo Offline/Simulação): Recebi sua mensagem: '{user_input}'. O modelo local DeepSeek-Coder não está carregado."
+        """Interface compatível com a UI antiga"""
+        return self.handle_request(user_input)
 
 # ============================================================================
 # CLASSE PRINCIPAL DO APLICATIVO
