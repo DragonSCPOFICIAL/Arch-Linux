@@ -1,214 +1,187 @@
-import json
 import os
-import sys
-import platform
 import subprocess
 import requests
 import datetime
 import glob
 import time
+import shutil
+from pathlib import Path
+
+# =========================
+# CONFIG FIXA
+# =========================
+ALLOWED_REPO_URL = "https://github.com/DragonSCPOFICIAL/ULX"
+ALLOWED_REPO_NAME = "ULX"
+WORKDIR = "./ULX_WORKDIR"
+
+CONFIG_DIR = Path.home() / ".config" / "brx_ai"
+TOKEN_FILE = CONFIG_DIR / "github_token.secure"
 
 class Colors:
-    HEADER = '\033[95m'
     BLUE = '\033[94m'
     GREEN = '\033[92m'
+    HEADER = '\033[95m'
     WARNING = '\033[93m'
     FAIL = '\033[91m'
-    ENDC = '\033[0m'
     BOLD = '\033[1m'
+    ENDC = '\033[0m'
 
 class BRXAgent:
     def __init__(self):
-        self.name = "BRX AI (PROGRAMMER CORE)"
-        self.version = "4.0.0-STABLE"
+        self.name = "BRX AI - ULX AUTONOMOUS CORE"
+        self.version = "5.1.0-SECURE"
         self.model = "deepseek-coder:1.3b"
         self.api_url = "http://localhost:11434/api/generate"
+        self.github_token = None
 
-    def log(self, message, type="INFO"):
-        time = datetime.datetime.now().strftime("%H:%M:%S")
-        color = Colors.BLUE if type == "INFO" else Colors.GREEN
-        if type == "AI": color = Colors.HEADER
-        print(f"{Colors.BOLD}[{time}] {color}[{type}]{Colors.ENDC} {message}")
+    # =========================
+    # LOG
+    # =========================
+    def log(self, msg, t="INFO"):
+        now = datetime.datetime.now().strftime("%H:%M:%S")
+        color = {
+            "INFO": Colors.BLUE,
+            "AI": Colors.HEADER,
+            "GIT": Colors.GREEN,
+            "ERROR": Colors.FAIL,
+            "WARN": Colors.WARNING
+        }.get(t, Colors.BLUE)
 
-    def ask_ai(self, prompt):
-        """Envia a pergunta para o modelo DeepSeek local."""
-        self.log("Pensando...", "AI")
-        repo_context = self.get_repo_context()
-        payload = {
+        print(f"{Colors.BOLD}[{now}] {color}[{t}]{Colors.ENDC} {msg}")
+
+    # =========================
+    # TOKEN SEGURO
+    # =========================
+    def load_or_request_token(self):
+        CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+
+        if TOKEN_FILE.exists():
+            self.github_token = TOKEN_FILE.read_text().strip()
+            return
+
+        token = input("🔑 GitHub TOKEN (repo): ").strip()
+        if len(token) < 20:
+            raise Exception("Token inválido")
+
+        TOKEN_FILE.write_text(token)
+        os.chmod(TOKEN_FILE, 0o600)
+        self.github_token = token
+
+    def configure_git_auth(self):
+        token = self.github_token
+        self.execute("git config --global credential.helper store")
+        self.execute("git config --global user.name \"BRX AI\"")
+        self.execute("git config --global user.email \"brx-ai@ulx.local\"")
+        self.execute(
+            f"git config --global url.\"https://{token}:x-oauth-basic@github.com/\".insteadOf https://github.com/"
+        )
+
+    # =========================
+    # GIT
+    # =========================
+    def prepare_repo(self):
+        if os.path.exists(WORKDIR):
+            shutil.rmtree(WORKDIR)
+
+        self.execute(f"git clone {ALLOWED_REPO_URL} {WORKDIR}")
+        os.chdir(WORKDIR)
+
+    def git_commit(self, msg):
+        self.execute("git add .")
+        self.execute(f"git commit -m \"{msg}\"")
+        self.execute("git push")
+
+    # =========================
+    # FS
+    # =========================
+    def repo_snapshot(self):
+        files = {}
+        for f in glob.glob("**", recursive=True):
+            if os.path.isfile(f) and ".git" not in f:
+                try:
+                    files[f] = open(f).read()
+                except:
+                    pass
+        return files
+
+    # =========================
+    # AI
+    # =========================
+    def ask_ai(self, system_prompt):
+        self.log("Raciocinando...", "AI")
+        r = requests.post(self.api_url, json={
             "model": self.model,
-            "prompt": f"Você é um especialista em Linux, Hardware e Programação. Ajude o usuário com: {prompt}\n\nContexto do Repositório:\n{repo_context}",
+            "prompt": system_prompt,
             "stream": False
-        }
+        }, timeout=120)
+
+        return r.json().get("response", "")
+
+    # =========================
+    # AUTONOMOUS CORE
+    # =========================
+    def autonomous_cycle(self):
+        snapshot = self.repo_snapshot()
+
+        system_prompt = f"""
+Você é um agente autônomo de engenharia de linguagens.
+Seu ÚNICO objetivo é evoluir ULX.
+
+REGRAS ABSOLUTAS:
+- Trabalhe somente neste repositório
+- Não peça ajuda humana
+- Uma melhoria real por ciclo
+- Código completo e funcional
+
+REPOSITÓRIO:
+{snapshot}
+
+RESPONDA EXATAMENTE NO FORMATO:
+AÇÃO:
+ARQUIVO:
+CÓDIGO:
+"""
+
+        response = self.ask_ai(system_prompt)
+
+        if "ARQUIVO:" not in response or "CÓDIGO:" not in response:
+            self.log("Resposta inválida da IA", "WARN")
+            return
 
         try:
-            response = requests.post(self.api_url, json=payload, timeout=60)
-            if response.status_code == 200:
-                return response.json().get("response", "Sem resposta do modelo.")
-            return f"Erro na API: {response.status_code}"
+            _, rest = response.split("ARQUIVO:")
+            path, code = rest.split("CÓDIGO:")
+            path = path.strip()
+
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+
+            with open(path, "w") as f:
+                f.write(code.strip())
+
+            self.git_commit(f"ULX AI: evolução automática em {path}")
+
         except Exception as e:
-            return f"Erro de conexão: Certifique-se que o Ollama está rodando. ({str(e)})"
+            self.log(str(e), "ERROR")
 
-    def read_file(self, filepath):
-        try:
-            with open(filepath, 'r') as f:
-                return f.read()
-        except Exception as e:
-            return f"Erro ao ler arquivo: {str(e)}"
+    # =========================
+    # EXEC
+    # =========================
+    def execute(self, cmd):
+        subprocess.run(cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
-    def write_file(self, filepath, content):
-        try:
-            with open(filepath, 'w') as f:
-                f.write(content)
-            return f"Arquivo {filepath} escrito com sucesso."
-        except Exception as e:
-            return f"Erro ao escrever arquivo: {str(e)}"
-
-    def git_command(self, command):
-        try:
-            self.log(f"Executando Git: {command}", "GIT")
-            result = subprocess.run(command, shell=True, capture_output=True, text=True, timeout=60)
-            if result.returncode == 0:
-                return result.stdout
-            else:
-                return f"Erro Git: {result.stderr}"
-        except Exception as e:
-            return f"Erro ao executar comando Git: {str(e)}"
-
-    def setup_git_credentials(self):
-        self.log("Configurando credenciais Git...", "INFO")
-        try:
-            # Configura o Git para usar o helper de credenciais do gh CLI
-            self.execute_shell("git config --global credential.helper cache")
-            self.execute_shell("git config --global user.email \"brx-ai@example.com\"") # Email genérico para o agente
-            self.execute_shell("git config --global user.name \"BRX AI Agent\"") # Nome genérico para o agente
-            self.log("Credenciais Git configuradas com sucesso.", "INFO")
-        except Exception as e:
-            self.log(f"Erro ao configurar credenciais Git: {str(e)}", "ERROR")
-
-    def list_repo_files(self):
-        self.log("Listando arquivos do repositório...", "INFO")
-        try:
-            # Usar glob para listar todos os arquivos no diretório atual e subdiretórios
-            # Excluir o diretório .git para evitar listar arquivos internos do Git
-            all_files = [f for f in glob.glob("**", recursive=True) if ".git" not in f and os.path.isfile(f)]
-            return "\n".join(all_files)
-        except Exception as e:
-            return f"Erro ao listar arquivos do repositório: {str(e)}"
-
-    def get_repo_context(self):
-        self.log("Gerando contexto do repositório...", "INFO")
-        context = ""
-        # Adicionar o Guia de Evolução se ele existir
-        if os.path.exists("ulx_evolution_guide.md"):
-            with open("ulx_evolution_guide.md", "r") as f:
-                context += f"Guia de Evolução ULX:\n{f.read()}\n\n"
-        
-        context += "Arquivos no repositório BRX_AI:\n"
-        try:
-            all_files = [f for f in glob.glob("**", recursive=True) if ".git" not in f and os.path.isfile(f)]
-            for f in all_files:
-                context += f"- {f}\n"
-            
-            # Adicionar contexto do repositório ULX se ele existir no mesmo nível de diretório
-            ulx_path = "../ULX-Repo" # Ajuste conforme a estrutura local do usuário
-            if os.path.exists(ulx_path):
-                context += "\nRepositório de Referência (ULX):\n"
-                ulx_files = [f for f in glob.glob(f"{ulx_path}/**", recursive=True) if ".git" not in f and os.path.isfile(f)]
-                for f in ulx_files[:20]: # Limitar a 20 arquivos para não estourar o contexto
-                    context += f"- {f}\n"
-                if len(ulx_files) > 20:
-                    context += f"... e mais {len(ulx_files) - 20} arquivos.\n"
-            
-            return context
-        except Exception as e:
-            return f"Erro ao gerar contexto do repositório: {str(e)}"
-
-    def execute_shell(self, command):
-        try:
-            self.log(f"Executando: {command}", "SHELL")
-            result = subprocess.run(command, shell=True, capture_output=True, text=True, timeout=30)
-            return result.stdout if result.returncode == 0 else result.stderr
-        except Exception as e:
-            return str(e)
-
-    def greet(self):
-        print(f"\n{Colors.HEADER}{Colors.BOLD}=== {self.name} ==={Colors.ENDC}")
-        print(f"{Colors.BLUE}Motor:{Colors.ENDC} DeepSeek-Coder (Local)")
-        print(f"{Colors.BLUE}Foco:{Colors.ENDC} Linux Kernel, Hardware & Nova Linguagem")
-        print("-" * 45)
-
-    def autonomous_run(self):
-        self.log("Iniciando modo autônomo...", "AI")
-        while True:
-            self.log("Pensando na próxima ação para evoluir ULX...", "AI")
-            # A IA decide a próxima ação com base no contexto do repositório e no objetivo de evoluir ULX
-            ai_decision_prompt = "Com base no contexto do repositório e na sintaxe da linguagem ULX, qual é a próxima ação para evoluir a linguagem? Pense em termos de leitura, escrita, execução de shell ou comandos git. Responda com um comando BRX_AI (ex: read <file>, write <file> <content>, sh <command>, git <command>)."
-            ai_response = self.ask_ai(ai_decision_prompt)
-            self.log(f"Decisão da IA: {ai_response}", "AI")
-
-            if ai_response.lower().startswith("sh "):
-                print(self.execute_shell(ai_response[3:]))
-            elif ai_response.lower().startswith("read "):
-                print(self.read_file(ai_response[5:]))
-            elif ai_response.lower().startswith("write "):
-                parts = ai_response[6:].split(" ", 1)
-                if len(parts) == 2:
-                    filepath, content = parts
-                    print(self.write_file(filepath, content))
-                else:
-                    self.log("Erro: Comando write mal formatado no modo autônomo.", "ERROR")
-            elif ai_response.lower().startswith("git "):
-                print(self.git_command(ai_response[4:]))
-            elif ai_response.lower() == "exit" or ai_response.lower() == "sair":
-                self.log("Modo autônomo encerrado pela IA.", "AI")
-                break
-            else:
-                self.log(f"Comando da IA não reconhecido ou inválido: {ai_response}", "ERROR")
-            
-            # Pequena pausa para evitar loop infinito e dar tempo para o sistema
-            time.sleep(5)
-
-
+    # =========================
+    # RUN
+    # =========================
     def run(self):
-        self.greet()
-        self.setup_git_credentials()
+        print(f"\n{Colors.HEADER}{Colors.BOLD}{self.name} v{self.version}{Colors.ENDC}")
+
+        self.load_or_request_token()
+        self.configure_git_auth()
+        self.prepare_repo()
+
         while True:
-            try:
-                user_input = input(f"{Colors.BOLD}BRX_AI > {Colors.ENDC}")
-                if not user_input: continue
-                
-                if user_input.lower() == "autonomo":
-                    self.autonomous_run()
-                elif user_input.lower().startswith("sh "):
-                    print(self.execute_shell(user_input[3:]))
-                elif user_input.lower().startswith("read "):
-                    print(self.read_file(user_input[5:]))
-                elif user_input.lower().startswith("write "):
-                    parts = user_input[6:].split(" ", 1)
-                    if len(parts) == 2:
-                        filepath, content = parts
-                        print(self.write_file(filepath, content))
-                    else:
-                        print("Uso: write <filepath> <content>")
-                elif user_input.lower() == "lsfiles":
-                    print(self.list_repo_files())
-                elif user_input.lower().startswith("summarize "):
-                    filepath_to_summarize = user_input[10:]
-                    summary_output = self.execute_shell(f"python3 summarize_file.py {filepath_to_summarize}")
-                    print(summary_output)
-                elif user_input.lower() == "context":
-                    print(self.get_repo_context())
-                elif user_input.lower().startswith("git "):
-                    print(self.git_command(user_input[4:]))
-                elif user_input.lower() in ["sair", "exit"]:
-                    break
-                else:
-                    # Qualquer outra entrada é tratada como uma pergunta de programação para a IA
-                    response = self.ask_ai(user_input)
-                    print(f"\n{Colors.GREEN}DeepSeek:{Colors.ENDC}\n{response}\n")
-            except KeyboardInterrupt:
-                break
+            self.autonomous_cycle()
+            time.sleep(15)
 
 if __name__ == "__main__":
-    agent = BRXAgent()
-    agent.run()
+    BRXAgent().run()
