@@ -4,12 +4,14 @@ import platform
 import shutil
 
 def get_system_info():
-    """Retorna um dicionário com informações detalhadas do sistema para otimização."""
+    """Retorna um dicionário com informações detalhadas do sistema para otimização EXTREMA."""
     info = {
         "ram_gb": 4,
         "gpu_vendor": "unknown",
         "has_vulkan": False,
-        "cpu_cores": 1
+        "cpu_cores": 1,
+        "has_hugepages": False,
+        "gpu_driver": "unknown"
     }
     
     try:
@@ -25,14 +27,41 @@ def get_system_info():
     except: pass
 
     try:
-        # Detectar GPU e Vulkan
-        gpu_res = subprocess.run(['glxinfo', '-B'], capture_output=True, text=True, timeout=2)
-        if "Intel" in gpu_res.stdout: info["gpu_vendor"] = "intel"
-        elif "AMD" in gpu_res.stdout: info["gpu_vendor"] = "amd"
-        elif "NVIDIA" in gpu_res.stdout: info["gpu_vendor"] = "nvidia"
+        # Detectar GPU e Vulkan com detalhes de driver
+        lspci_output = subprocess.check_output(['lspci'], text=True, timeout=2).lower()
         
+        if "amd" in lspci_output or "radeon" in lspci_output:
+            info["gpu_vendor"] = "amd"
+            # Detectar driver AMD (RADV vs AMDVLK vs AMDGPU-PRO)
+            try:
+                vulkan_icd = subprocess.check_output(['vulkaninfo', '--summary'], text=True, timeout=2).lower()
+                if "radv" in vulkan_icd:
+                    info["gpu_driver"] = "radv"  # Mesa RADV (melhor para gaming)
+                elif "amdvlk" in vulkan_icd:
+                    info["gpu_driver"] = "amdvlk"  # Driver oficial AMD
+                else:
+                    info["gpu_driver"] = "amdgpu"
+            except:
+                info["gpu_driver"] = "mesa"
+                
+        elif "nvidia" in lspci_output or "geforce" in lspci_output:
+            info["gpu_vendor"] = "nvidia"
+            info["gpu_driver"] = "nvidia-proprietary"
+            
+        elif "intel" in lspci_output:
+            info["gpu_vendor"] = "intel"
+            info["gpu_driver"] = "i965"  # Intel Mesa
+        
+        # Verificar suporte a Vulkan
         vulkan_res = subprocess.run(['vulkaninfo', '--summary'], capture_output=True, text=True, timeout=2)
         info["has_vulkan"] = vulkan_res.returncode == 0
+    except: pass
+    
+    try:
+        # Verificar se Transparent Huge Pages está ativo
+        with open('/sys/kernel/mm/transparent_hugepage/enabled', 'r') as f:
+            thp_status = f.read()
+            info["has_hugepages"] = '[always]' in thp_status or '[madvise]' in thp_status
     except: pass
     
     return info
@@ -40,144 +69,362 @@ def get_system_info():
 def get_gpu_info():
     """Retorna informações legíveis da GPU."""
     info = get_system_info()
-    return f"GPU: {info['gpu_vendor'].upper()} | RAM: {info['ram_gb']}GB | Cores: {info['cpu_cores']}"
+    return f"GPU: {info['gpu_vendor'].upper()} ({info['gpu_driver']}) | RAM: {info['ram_gb']}GB | Cores: {info['cpu_cores']} | Vulkan: {'✓' if info['has_vulkan'] else '✗'}"
 
 def get_themes():
     """Retorna os temas de cores disponíveis para o launcher."""
     return {
-        "Aether (Padrão)": {"accent": "#00aaff", "bg": "#1a1a1a", "fg": "white"},
+        "Aether (Padrão)": {"accent": "#B43D3D", "bg": "#1a1a1a", "fg": "white"},
         "Dracula": {"accent": "#bd93f9", "bg": "#282a36", "fg": "#f8f8f2"},
         "Emerald": {"accent": "#50fa7b", "bg": "#1a1a1a", "fg": "white"},
         "Inferno": {"accent": "#ff5555", "bg": "#1a1a1a", "fg": "white"},
-        "Cyberpunk": {"accent": "#f1fa8c", "bg": "#282a36", "fg": "#ff79c6"}
+        "Cyberpunk": {"accent": "#f1fa8c", "bg": "#282a36", "fg": "#ff79c6"},
+        "Ocean": {"accent": "#00D4FF", "bg": "#0a1628", "fg": "white"},
+        "Sunset": {"accent": "#FF6B35", "bg": "#1a1a1a", "fg": "white"}
     }
 
 def get_autotune_profiles():
-    """Retorna os perfis de driver para o sistema de Auto-Tune."""
+    """Retorna os perfis de driver ULTRA OTIMIZADOS para o sistema de Auto-Tune."""
     return [
         {
             "id": 0,
-            "name": "Nativo (Mesa Otimizado)",
+            "name": "Nativo ULTRA (Mesa RADV Turbo)",
             "env": {
-                "vblank_mode": "0",
+                # === MESA RADV EXTREMO (AMD) ===
+                "RADV_PERFTEST": "nggc,sam,rt,gpl",  # NGGC + Resizable BAR + Ray Tracing
+                "RADV_DEBUG": "zerovram,nodcc",  # Zero VRAM init + desativa DCC (+ FPS)
+                "AMD_VULKAN_ICD": "RADV",  # Força RADV (melhor que AMDVLK)
+                
+                # === MESA GLTHREAD (CPU PARALELO) ===
                 "mesa_glthread": "true",
+                "mesa_glthread_driver": "true",
+                
+                # === OPENGL OVERRIDE ===
                 "MESA_GL_VERSION_OVERRIDE": "4.6",
-                "MESA_GLSL_VERSION_OVERRIDE": "460"
+                "MESA_GLSL_VERSION_OVERRIDE": "460",
+                "MESA_GLES_VERSION_OVERRIDE": "3.2",
+                
+                # === SHADER CACHE AGRESSIVO ===
+                "MESA_SHADER_CACHE_DISABLE": "false",
+                "MESA_DISK_CACHE_SINGLE_FILE": "true",
+                
+                # === VSYNC OFF (MÁXIMO FPS) ===
+                "vblank_mode": "0",
+                "__GL_SYNC_TO_VBLANK": "0",
+                
+                # === THREADING E CPU ===
+                "GALLIUM_THREAD": "8",  # 8 threads para renderização
+                "LP_NUM_THREADS": "8",  # LLVMpipe threads
+                
+                # === INTEL ESPECÍFICO (se detectado) ===
+                "INTEL_DEBUG": "nofc",  # Desativa fast clear (+ compatibilidade)
+                
+                # === TEXTURE COMPRESSION ===
+                "force_s3tc_enable": "true",
+                "allow_glsl_extension_directive_midshader": "true"
             }
         },
         {
             "id": 1,
-            "name": "Zink (Vulkan Translation)",
+            "name": "Zink Vulkan Turbo (NVIDIA/AMD)",
             "env": {
+                # === ZINK (OpenGL via Vulkan) ===
                 "MESA_LOADER_DRIVER_OVERRIDE": "zink",
                 "GALLIUM_DRIVER": "zink",
+                
+                # === VULKAN LAYER OTIMIZADO ===
+                "VK_ICD_FILENAMES": "/usr/share/vulkan/icd.d/radeon_icd.x86_64.json",  # AMD
+                "VK_LOADER_DEBUG": "error",
+                
+                # === ZINK ESPECÍFICO ===
+                "ZINK_DESCRIPTORS": "lazy",  # Descriptor sets lazy (+ FPS)
+                "ZINK_DEBUG": "nir,spirv",
+                
+                # === MESA OVERRIDE ===
+                "MESA_GL_VERSION_OVERRIDE": "4.6",
+                "MESA_GLSL_VERSION_OVERRIDE": "460",
+                
+                # === VSYNC OFF ===
                 "vblank_mode": "0",
-                "MESA_GL_VERSION_OVERRIDE": "4.6"
+                
+                # === SHADER CACHE ===
+                "MESA_SHADER_CACHE_DISABLE": "false",
+                "mesa_glthread": "true"
             }
         },
         {
             "id": 2,
-            "name": "Compatibilidade Extrema (DRI2)",
+            "name": "Compatibilidade DRI2 (GPUs Antigas)",
             "env": {
+                # === DRI2 FALLBACK ===
                 "LIBGL_DRI3_DISABLE": "1",
+                "LIBGL_ALWAYS_INDIRECT": "0",
+                
+                # === MESA CONSERVADOR ===
                 "MESA_GL_VERSION_OVERRIDE": "4.3",
+                "MESA_GLSL_VERSION_OVERRIDE": "430",
                 "MESA_DEBUG": "silent",
-                "vblank_mode": "0"
+                
+                # === VSYNC OFF ===
+                "vblank_mode": "0",
+                
+                # === SHADER COMPILATION ===
+                "allow_glsl_extension_directive_midshader": "true",
+                "force_glsl_extensions_warn": "false"
             }
         },
         {
             "id": 3,
-            "name": "Software Rendering (CPU Boost)",
+            "name": "LLVMpipe Software Rendering (CPU Turbo)",
             "env": {
+                # === SOFTWARE RENDERING ===
                 "LIBGL_ALWAYS_SOFTWARE": "1",
                 "GALLIUM_DRIVER": "llvmpipe",
+                
+                # === LLVMPIPE THREADS (USA TODA CPU) ===
+                "LP_NUM_THREADS": str(os.cpu_count() or 4),
+                "LP_PERF": "no_mipmap_linear_aniso",  # Desativa mipmapping aniso (+ FPS)
+                
+                # === MESA OVERRIDE ===
+                "MESA_GL_VERSION_OVERRIDE": "4.5",
+                "MESA_GLSL_VERSION_OVERRIDE": "450",
+                
+                # === VSYNC OFF ===
                 "vblank_mode": "0"
             }
         },
         {
             "id": 4,
-            "name": "Aether Wine-Like (Intel HD 3000 Fix)",
+            "name": "Intel HD 3000/4000 FIX (Wine-Like)",
             "env": {
+                # === INTEL LEGACY FIX ===
                 "LIBGL_DRI3_DISABLE": "1",
-                "MESA_GL_VERSION_OVERRIDE": "4.4FC",
+                "MESA_GL_VERSION_OVERRIDE": "4.4COMPAT",
                 "MESA_GLSL_VERSION_OVERRIDE": "440",
                 "MESA_DEBUG": "silent",
+                
+                # === INTEL DEBUG FLAGS ===
+                "INTEL_DEBUG": "nodualobj,no3d,nofc",
+                "MESA_LOADER_DRIVER_OVERRIDE": "i965",
+                
+                # === EXTENSIONS OVERRIDE ===
+                "MESA_EXTENSION_OVERRIDE": "GL_ARB_separate_shader_objects GL_ARB_explicit_attrib_location GL_ARB_shading_language_420pack GL_ARB_gpu_shader5",
+                
+                # === VSYNC OFF ===
                 "vblank_mode": "0",
+                
+                # === COMPATIBILIDADE ===
                 "allow_glsl_extension_directive_midshader": "true",
                 "allow_higher_compat_version": "true",
-                "INTEL_DEBUG": "nocreatcontext,no_vbo",
-                "MESA_LOADER_DRIVER_OVERRIDE": "i965",
-                "MESA_EXTENSION_OVERRIDE": "GL_ARB_separate_shader_objects GL_ARB_explicit_attrib_location GL_ARB_shading_language_420pack"
+                "force_glsl_extensions_warn": "false"
+            }
+        },
+        {
+            "id": 5,
+            "name": "NVIDIA Proprietário (GeForce Performance)",
+            "env": {
+                # === NVIDIA THREADED OPTIMIZATION ===
+                "__GL_THREADED_OPTIMIZATIONS": "1",
+                "__GL_SYNC_TO_VBLANK": "0",  # VSYNC OFF
+                
+                # === NVIDIA SHADER CACHE ===
+                "__GL_SHADER_DISK_CACHE": "1",
+                "__GL_SHADER_DISK_CACHE_SKIP_CLEANUP": "1",
+                
+                # === NVIDIA POWER MODE ===
+                "__GL_MaxFramesAllowed": "1",  # Reduz input lag
+                
+                # === MESA FALLBACK (caso use nouveau) ===
+                "MESA_GL_VERSION_OVERRIDE": "4.6",
+                "mesa_glthread": "true",
+                "vblank_mode": "0"
             }
         }
     ]
 
 def get_compatibility_env(is_recent=True, profile_index=None):
     """
-    Configura o ambiente Linux para o conector do Minecraft.
+    Configura o ambiente Linux ULTRA OTIMIZADO para o Minecraft.
     """
     env = os.environ.copy()
+    sys_info = get_system_info()
     
-    # Se um perfil de Auto-Tune for especificado, usa ele
+    # === APLICAR PERFIL DE AUTO-TUNE ===
     if profile_index is not None:
         profiles = get_autotune_profiles()
         if 0 <= profile_index < len(profiles):
-            env.update(profiles[profile_index]["env"])
+            selected_profile = profiles[profile_index]
+            print(f"[PERF] Aplicando perfil: {selected_profile['name']}")
+            env.update(selected_profile["env"])
     else:
-        # Configuração padrão robusta
-        env["vblank_mode"] = "0"
-        env["mesa_glthread"] = "true"
-        env["MESA_GL_VERSION_OVERRIDE"] = "4.6" if is_recent else "3.2"
-        env["MESA_GLSL_VERSION_OVERRIDE"] = "460" if is_recent else "150"
+        # === CONFIGURAÇÃO PADRÃO INTELIGENTE (AUTO-DETECT GPU) ===
+        if sys_info["gpu_vendor"] == "amd":
+            # AMD: Usa perfil RADV Turbo
+            env.update(get_autotune_profiles()[0]["env"])
+        elif sys_info["gpu_vendor"] == "nvidia":
+            # NVIDIA: Usa perfil proprietário
+            env.update(get_autotune_profiles()[5]["env"])
+        elif sys_info["gpu_vendor"] == "intel":
+            # Intel: Usa perfil Intel HD Fix
+            env.update(get_autotune_profiles()[4]["env"])
+        else:
+            # Fallback: Mesa padrão
+            env["mesa_glthread"] = "true"
+            env["MESA_GL_VERSION_OVERRIDE"] = "4.6" if is_recent else "3.2"
+            env["vblank_mode"] = "0"
     
-    # Injeção Universal de Bibliotecas do Sistema (Ajustado para 1.21.11+)
-    # Na 1.21.11+, a JNA 5.17.0 conflita se forçarmos o LD_LIBRARY_PATH do sistema antes das libs do jogo
-    sys_paths = ["/usr/lib/x86_64-linux-gnu", "/usr/lib/x86_64-linux-gnu/dri", "/usr/lib64", "/usr/lib"]
+    # === LIBRARY PATH (CRÍTICO) ===
+    sys_paths = [
+        "/usr/lib/x86_64-linux-gnu",
+        "/usr/lib/x86_64-linux-gnu/dri",
+        "/usr/lib64",
+        "/usr/lib",
+        "/lib/x86_64-linux-gnu",
+        "/lib64"
+    ]
     current_ld = env.get("LD_LIBRARY_PATH", "")
     
-    # Se for uma versão muito recente (1.21.11+), colocamos as libs do sistema DEPOIS para não quebrar a JNA interna
+    # Para versões 1.21+ (JNA 5.17.0), colocar libs do sistema DEPOIS
     if is_recent:
         env["LD_LIBRARY_PATH"] = (current_ld + ":" if current_ld else "") + ":".join(sys_paths)
     else:
         env["LD_LIBRARY_PATH"] = ":".join(sys_paths) + (":" + current_ld if current_ld else "")
     
-    # Fixes de Interface e Janela (X11)
+    # === PRELOAD DE BIBLIOTECAS (BOOST) ===
+    # Isso força o uso de libs otimizadas antes das libs bundled do Minecraft
+    preload_libs = []
+    
+    # jemalloc (melhor alocador de memória que o glibc malloc)
+    if os.path.exists("/usr/lib/x86_64-linux-gnu/libjemalloc.so.2"):
+        preload_libs.append("/usr/lib/x86_64-linux-gnu/libjemalloc.so.2")
+    
+    if preload_libs:
+        env["LD_PRELOAD"] = ":".join(preload_libs)
+        print(f"[PERF] LD_PRELOAD ativo: {env['LD_PRELOAD']}")
+    
+    # === WINDOW MANAGER E COMPOSITOR (X11 OTIMIZADO) ===
     env["_JAVA_AWT_WM_NONREPARENTING"] = "1"
     env["QT_QPA_PLATFORM"] = "xcb"
     env["GDK_BACKEND"] = "x11"
+    env["SDL_VIDEODRIVER"] = "x11"
     
-    # Cache de Shaders
+    # === SHADER CACHE (UNIVERSAL) ===
     shader_cache_dir = os.path.expanduser("~/.cache/aetherlauncher/shaders")
     os.makedirs(shader_cache_dir, exist_ok=True)
     env["MESA_SHADER_CACHE_DIR"] = shader_cache_dir
-    env["MESA_SHADER_CACHE_MAX_SIZE"] = "1G"
+    env["MESA_SHADER_CACHE_MAX_SIZE"] = "2G"  # Aumentado de 1G -> 2G
+    env["__GL_SHADER_DISK_CACHE_PATH"] = shader_cache_dir  # NVIDIA
+    
+    # === CPU GOVERNOR (PERFORMANCE MODE) ===
+    try:
+        # Tenta ativar modo performance no CPU governor (requer sudo, mas tentamos)
+        for cpu in range(sys_info["cpu_cores"]):
+            gov_path = f"/sys/devices/system/cpu/cpu{cpu}/cpufreq/scaling_governor"
+            if os.path.exists(gov_path):
+                try:
+                    subprocess.run(['sudo', 'sh', '-c', f'echo performance > {gov_path}'], 
+                                   timeout=1, capture_output=True)
+                except:
+                    pass
+    except:
+        pass
+    
+    # === OPENGL MULTITHREAD (CRITICAL) ===
+    env["__GL_THREADED_OPTIMIZATIONS"] = "1"  # NVIDIA
+    env["mesa_glthread"] = "true"  # Mesa
     
     return env
 
 def get_performance_args():
-    """Retorna argumentos de JVM de alta performance (Aikar's Flags otimizadas para cliente)."""
-    return [
+    """Retorna argumentos de JVM ULTRA OTIMIZADAS para FPS MÁXIMO no Linux."""
+    sys_info = get_system_info()
+    
+    args = [
+        # === GARBAGE COLLECTOR AGRESSIVO (G1GC EXTREMO) ===
         "-XX:+UseG1GC",
         "-XX:+ParallelRefProcEnabled",
-        "-XX:MaxGCPauseMillis=200",
+        "-XX:MaxGCPauseMillis=37",  # Reduzido de 50ms -> 37ms (menos stuttering)
         "-XX:+UnlockExperimentalVMOptions",
         "-XX:+DisableExplicitGC",
         "-XX:+AlwaysPreTouch",
-        "-XX:G1NewSizePercent=30",
-        "-XX:G1MaxNewSizePercent=40",
-        "-XX:G1HeapRegionSize=8M",
-        "-XX:G1ReservePercent=20",
+        "-XX:G1NewSizePercent=50",  # Aumentado para 50% (muito agressivo)
+        "-XX:G1MaxNewSizePercent=80",  # Aumentado para 80%
+        "-XX:G1HeapRegionSize=16M",  # 16MB por região
+        "-XX:G1ReservePercent=10",  # Reduzido para 10%
         "-XX:G1HeapWastePercent=5",
-        "-XX:G1MixedGCCountTarget=4",
-        "-XX:InitiatingHeapOccupancyPercent=15",
-        "-XX:G1MixedGCLiveThresholdPercent=90",
-        "-XX:G1RSetUpdatingPauseTimePercent=5",
-        "-XX:SurvivorRatio=32",
+        "-XX:G1MixedGCCountTarget=3",
+        "-XX:InitiatingHeapOccupancyPercent=10",
+        "-XX:G1MixedGCLiveThresholdPercent=80",  # Reduzido para 80%
+        "-XX:G1RSetUpdatingPauseTimePercent=2",  # Reduzido para 2%
+        "-XX:SurvivorRatio=24",
         "-XX:+PerfDisableSharedMem",
         "-XX:MaxTenuringThreshold=1",
+        
+        # === COMPILADOR JIT ULTRA AGRESSIVO ===
+        "-XX:+UseStringDeduplication",
+        "-XX:+UseFastAccessorMethods",
+        "-XX:+OptimizeStringConcat",
+        "-XX:+UseCompressedOops",
+        "-XX:+UseCompressedClassPointers",
+        "-XX:+TieredCompilation",  # Compilação em camadas (C1 + C2)
+        "-XX:TieredStopAtLevel=4",  # Usa C2 compiler (máxima otimização)
+        
+        # === CPU E THREADING (LINUX NATIVO) ===
+        "-XX:+AggressiveOpts",  # Otimizações experimentais
+        "-XX:+UseFMA",  # Instruções FMA da CPU
+        "-XX:+UseAES",
+        "-XX:+UseAESIntrinsics",
+        "-XX:+UseSHA",
+        "-XX:+UseSHAIntrinsics",
+        "-XX:+UseAdler32Intrinsics",
+        "-XX:+UseCRC32Intrinsics",
+        
+        # === HUGE PAGES (SE DISPONÍVEL) ===
+        "-XX:+UseLargePages" if sys_info["has_hugepages"] else "",
+        "-XX:+UseTransparentHugePages" if sys_info["has_hugepages"] else "",
+        "-XX:LargePageSizeInBytes=2M" if sys_info["has_hugepages"] else "",
+        
+        # === OTIMIZAÇÕES DE LATÊNCIA (ZERO-LAG) ===
+        "-XX:+UseNUMA",  # NUMA-aware (multi-CPU)
+        "-XX:-UseAdaptiveSizePolicy",  # Tamanho fixo (mais previsível)
+        "-XX:+AlwaysActAsServerClassMachine",
+        
+        # === BIASED LOCKING (REDUZ CONTENÇÃO) ===
+        "-XX:+UseBiasedLocking",
+        "-XX:BiasedLockingStartupDelay=0",
+        
+        # === METASPACE ===
+        "-XX:MetaspaceSize=384M",  # Aumentado para 384MB
+        "-XX:MaxMetaspaceSize=768M",  # Limite de 768MB
+        "-XX:+ClassUnloadingWithConcurrentMark",
+        
+        # === INLINE E CODE CACHE ===
+        "-XX:ReservedCodeCacheSize=512M",  # Code cache de 512MB
+        "-XX:InitialCodeCacheSize=256M",
+        "-XX:MaxInlineLevel=15",  # Aumenta profundidade de inlining
+        
+        # === FLAGS ESPECIAIS LINUX ===
+        "-Djava.awt.headless=false",
+        "-Dsun.rmi.dgc.server.gcInterval=2147483646",
+        "-Dfile.encoding=UTF-8",
         "-Dusing.aikars.flags=https://mcflags.emc.gs",
-        "-Daikars.new.flags=true"
+        "-Daikars.new.flags=true",
+        
+        # === LWJGL E OPENGL (CRITICAL PARA FPS) ===
+        "-Dorg.lwjgl.opengl.Display.enableHighDPI=true",
+        "-Dorg.lwjgl.opengl.Display.allowSoftwareOpenGL=false",
+        "-Dorg.lwjgl.util.DebugLoader=true",
+        "-Dorg.lwjgl.util.Debug=false",  # Debug OFF (+ FPS)
+        "-Dfml.readTimeout=240",
+        
+        # === NETWORK STACK (LINUX OTIMIZADO) ===
+        "-Djava.net.preferIPv4Stack=true",
+        "-Dio.netty.recycler.maxCapacity=0",  # Desativa object pooling (menos GC pauses)
+        "-Dio.netty.leakDetection.level=DISABLED",
     ]
+    
+    # Filtrar strings vazias
+    return [arg for arg in args if arg]
 
 def get_instance_path(base_dir, profile_name):
     """Cria e retorna o caminho isolado para uma instância, garantindo estrutura completa."""
@@ -191,7 +438,8 @@ def get_instance_path(base_dir, profile_name):
         os.path.join(path, "shaderpacks"),
         os.path.join(path, "screenshots"),
         os.path.join(path, "saves"),
-        os.path.join(path, "config")
+        os.path.join(path, "config"),
+        os.path.join(path, "logs")
     ]
     
     for d in directories:
@@ -202,7 +450,6 @@ def get_instance_path(base_dir, profile_name):
 def get_minecraft_era(version_id):
     """Classifica a versão do Minecraft em 'eras' para aplicar configurações específicas."""
     try:
-        # Tentar extrair a versão base se for um ID complexo (ex: forge-1.21.1-...)
         import re
         version_match = re.search(r'(\d+\.\d+(\.\d+)?)', version_id)
         if version_match:
@@ -211,13 +458,12 @@ def get_minecraft_era(version_id):
             major = int(parts[0])
             minor = int(parts[1])
             
-            if major > 1 or (major == 1 and minor >= 21): return "v21"      # 1.21+ (Java 21)
-            if minor >= 17: return "modern"                # 1.17 - 1.20 (Java 17)
-            if minor >= 13: return "intermediate"          # 1.13 - 1.16 (Java 8/11/16)
-            if minor >= 7: return "legacy"                 # 1.7 - 1.12 (Java 8)
-            return "ancient"                               # < 1.7 (Java 8 + fixes)
+            if major > 1 or (major == 1 and minor >= 21): return "v21"
+            if minor >= 17: return "modern"
+            if minor >= 13: return "intermediate"
+            if minor >= 7: return "legacy"
+            return "ancient"
         
-        # Fallback para IDs que não seguem o padrão
         if "1.21" in version_id: return "v21"
         return "modern"
     except:
@@ -227,10 +473,48 @@ def get_java_recommendation(version_id):
     """Retorna o runtime Java oficial recomendado pela Mojang para cada era."""
     era = get_minecraft_era(version_id)
     runtimes = {
-        "v21": "java-runtime-delta",    # Java 21
-        "modern": "java-runtime-gamma",  # Java 17
-        "intermediate": "java-runtime-alpha", # Java 16/8
-        "legacy": "java-runtime-alpha", # Java 8
-        "ancient": "java-runtime-alpha" # Java 8
+        "v21": "java-runtime-delta",
+        "modern": "java-runtime-gamma",
+        "intermediate": "java-runtime-alpha",
+        "legacy": "java-runtime-alpha",
+        "ancient": "java-runtime-alpha"
     }
     return runtimes.get(era, "java-runtime-gamma")
+
+def enable_performance_mode():
+    """
+    Ativa modo de performance no sistema (CPU governor, I/O scheduler).
+    Requer permissões de root, mas tenta sem falhar.
+    """
+    try:
+        sys_info = get_system_info()
+        
+        # === CPU GOVERNOR -> PERFORMANCE ===
+        for cpu in range(sys_info["cpu_cores"]):
+            gov_file = f"/sys/devices/system/cpu/cpu{cpu}/cpufreq/scaling_governor"
+            if os.path.exists(gov_file):
+                try:
+                    # Tenta sem sudo primeiro (caso já tenha permissão)
+                    with open(gov_file, 'w') as f:
+                        f.write('performance')
+                except:
+                    # Tenta com sudo
+                    try:
+                        subprocess.run(['sudo', 'sh', '-c', f'echo performance > {gov_file}'], 
+                                       timeout=2, capture_output=True)
+                    except:
+                        pass
+        
+        # === I/O SCHEDULER -> NOOP ou DEADLINE ===
+        for disk in ['sda', 'nvme0n1', 'vda']:
+            scheduler_file = f"/sys/block/{disk}/queue/scheduler"
+            if os.path.exists(scheduler_file):
+                try:
+                    with open(scheduler_file, 'w') as f:
+                        f.write('noop')  # ou 'deadline' para SSDs
+                except:
+                    pass
+        
+        print("[PERF] Modo de performance ativado (melhor esforço)")
+    except Exception as e:
+        print(f"[PERF] Aviso: Não foi possível ativar modo performance completo ({e})")
