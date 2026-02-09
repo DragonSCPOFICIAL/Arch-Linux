@@ -43,7 +43,7 @@ Esse arquivo é expandido dinamicamente pelo motor de evolução, aumentando a b
 
 ### 1. Clonar o repositório
 
-git clone https://github.com/DragonSCPOFICIAL/BRX_AI.git
+git clone git clone https://github.com/DragonSCPOFICIAL/Arch-Linux.git
 
 ### 2. Acessar a pasta do projeto
 
@@ -51,7 +51,7 @@ cd BRX_AI
 
 Opcionalmente, se estiver organizando manualmente:
 
-mv BRX_AI ~/Arch-Linux/ cd ~/Arch-Linux/BRX_AI
+cd Arch-Linux/BRX_AI
 
 ### 3. Conceder permissão ao instalador
 
