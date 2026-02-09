@@ -30,3 +30,8 @@ ollama pull deepseek-coder:1.3b
 
 echo -e "${GREEN}[✓] Motor de IA configurado com sucesso!${NC}"
 echo -e "${BLUE}O BRX AI agora tem acesso ao cérebro do DeepSeek para criar sua linguagem.${NC}"
+
+# 4. Configurar safe.directory para o Git
+echo -e "${BLUE}[i] Configurando safe.directory para o repositório Git...${NC}"
+git config --global --add safe.directory /home/ubuntu/Arch-Linux-Repo
+echo -e "${GREEN}[✓] safe.directory configurado.${NC}"

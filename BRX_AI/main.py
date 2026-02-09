@@ -6,6 +6,7 @@ import subprocess
 import requests
 import datetime
 import glob
+import time
 
 class Colors:
     HEADER = '\033[95m'
@@ -73,6 +74,17 @@ class BRXAgent:
         except Exception as e:
             return f"Erro ao executar comando Git: {str(e)}"
 
+    def setup_git_credentials(self):
+        self.log("Configurando credenciais Git...", "INFO")
+        try:
+            # Configura o Git para usar o helper de credenciais do gh CLI
+            self.execute_shell("git config --global credential.helper cache")
+            self.execute_shell("git config --global user.email \"brx-ai@example.com\"") # Email genérico para o agente
+            self.execute_shell("git config --global user.name \"BRX AI Agent\"") # Nome genérico para o agente
+            self.log("Credenciais Git configuradas com sucesso.", "INFO")
+        except Exception as e:
+            self.log(f"Erro ao configurar credenciais Git: {str(e)}", "ERROR")
+
     def list_repo_files(self):
         self.log("Listando arquivos do repositório...", "INFO")
         try:
@@ -85,7 +97,13 @@ class BRXAgent:
 
     def get_repo_context(self):
         self.log("Gerando contexto do repositório...", "INFO")
-        context = "Arquivos no repositório BRX_AI:\n"
+        context = ""
+        # Adicionar o Guia de Evolução se ele existir
+        if os.path.exists("ulx_evolution_guide.md"):
+            with open("ulx_evolution_guide.md", "r") as f:
+                context += f"Guia de Evolução ULX:\n{f.read()}\n\n"
+        
+        context += "Arquivos no repositório BRX_AI:\n"
         try:
             all_files = [f for f in glob.glob("**", recursive=True) if ".git" not in f and os.path.isfile(f)]
             for f in all_files:
@@ -119,14 +137,49 @@ class BRXAgent:
         print(f"{Colors.BLUE}Foco:{Colors.ENDC} Linux Kernel, Hardware & Nova Linguagem")
         print("-" * 45)
 
+    def autonomous_run(self):
+        self.log("Iniciando modo autônomo...", "AI")
+        while True:
+            self.log("Pensando na próxima ação para evoluir ULX...", "AI")
+            # A IA decide a próxima ação com base no contexto do repositório e no objetivo de evoluir ULX
+            ai_decision_prompt = "Com base no contexto do repositório e na sintaxe da linguagem ULX, qual é a próxima ação para evoluir a linguagem? Pense em termos de leitura, escrita, execução de shell ou comandos git. Responda com um comando BRX_AI (ex: read <file>, write <file> <content>, sh <command>, git <command>)."
+            ai_response = self.ask_ai(ai_decision_prompt)
+            self.log(f"Decisão da IA: {ai_response}", "AI")
+
+            if ai_response.lower().startswith("sh "):
+                print(self.execute_shell(ai_response[3:]))
+            elif ai_response.lower().startswith("read "):
+                print(self.read_file(ai_response[5:]))
+            elif ai_response.lower().startswith("write "):
+                parts = ai_response[6:].split(" ", 1)
+                if len(parts) == 2:
+                    filepath, content = parts
+                    print(self.write_file(filepath, content))
+                else:
+                    self.log("Erro: Comando write mal formatado no modo autônomo.", "ERROR")
+            elif ai_response.lower().startswith("git "):
+                print(self.git_command(ai_response[4:]))
+            elif ai_response.lower() == "exit" or ai_response.lower() == "sair":
+                self.log("Modo autônomo encerrado pela IA.", "AI")
+                break
+            else:
+                self.log(f"Comando da IA não reconhecido ou inválido: {ai_response}", "ERROR")
+            
+            # Pequena pausa para evitar loop infinito e dar tempo para o sistema
+            time.sleep(5)
+
+
     def run(self):
         self.greet()
+        self.setup_git_credentials()
         while True:
             try:
                 user_input = input(f"{Colors.BOLD}BRX_AI > {Colors.ENDC}")
                 if not user_input: continue
                 
-                if user_input.lower().startswith("sh "):
+                if user_input.lower() == "autonomo":
+                    self.autonomous_run()
+                elif user_input.lower().startswith("sh "):
                     print(self.execute_shell(user_input[3:]))
                 elif user_input.lower().startswith("read "):
                     print(self.read_file(user_input[5:]))
