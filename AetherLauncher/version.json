@@ -1,14 +1,14 @@
 {
-  "version": "5.0-TURBO",
-  "build": 13,
+  "version": "5.1-GODMODE",
+  "build": 14,
   "release_date": "2026-02-09",
   "update_check_url": "https://raw.githubusercontent.com/DragonSCPOFICIAL/Arch-Linux/main/AetherLauncher/version.json",
   "changelog": [
-    "Fix: Corrigido erro 'Operation not permitted' ao usar ionice/nice sem root",
-    "Performance: Lógica de prioridade inteligente (detecta permissões do usuário)",
-    "Core: Atualizado para Aether Launcher v5.0-TURBO",
-    "Estabilidade: Melhorado o tratamento de erros no lançamento do processo",
-    "Fix: Patch definitivo para compatibilidade com kernels Linux restritivos"
+    "Performance: Adicionado perfil GODMODE para GPUs Intel HD 3000/4000",
+    "Graphics: Otimização agressiva de OpenGL (Mesa i965 Turbo)",
+    "Core: Novo sistema de detecção automática priorizando GODMODE em hardware antigo",
+    "Memory: Integração com jemalloc para redução de stuttering",
+    "Fix: Ajuste de flags JVM para melhor estabilidade em Java 21"
   ],
   "download_url": "https://raw.githubusercontent.com/DragonSCPOFICIAL/Arch-Linux/main/AetherLauncher/",
   "min_version": "4.0.0"

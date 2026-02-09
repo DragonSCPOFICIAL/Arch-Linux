@@ -223,21 +223,41 @@ def get_autotune_profiles():
             "id": 5,
             "name": "NVIDIA Proprietário (GeForce Performance)",
             "env": {
-                # === NVIDIA THREADED OPTIMIZATION ===
                 "__GL_THREADED_OPTIMIZATIONS": "1",
-                "__GL_SYNC_TO_VBLANK": "0",  # VSYNC OFF
-                
-                # === NVIDIA SHADER CACHE ===
+                "__GL_SYNC_TO_VBLANK": "0",
                 "__GL_SHADER_DISK_CACHE": "1",
                 "__GL_SHADER_DISK_CACHE_SKIP_CLEANUP": "1",
-                
-                # === NVIDIA POWER MODE ===
-                "__GL_MaxFramesAllowed": "1",  # Reduz input lag
-                
-                # === MESA FALLBACK (caso use nouveau) ===
+                "__GL_MaxFramesAllowed": "1",
                 "MESA_GL_VERSION_OVERRIDE": "4.6",
                 "mesa_glthread": "true",
                 "vblank_mode": "0"
+            }
+        },
+        {
+            "id": 6,
+            "name": "GODMODE (Intel HD 3000 EXTREME)",
+            "env": {
+                # === MESA INTEL OPTIMIZATION ===
+                "INTEL_DEBUG": "nofc,norbc",  # Desativa Fast Clear e Render Buffer Compression (Ganha FPS em GPUs velhas)
+                "MESA_LOADER_DRIVER_OVERRIDE": "i965",
+                "mesa_glthread": "true",
+                "MESA_GL_VERSION_OVERRIDE": "4.5COMPAT",
+                "MESA_GLSL_VERSION_OVERRIDE": "450",
+                
+                # === PERFORMANCE BOOST ===
+                "vblank_mode": "0",
+                "allow_glsl_extension_directive_midshader": "true",
+                "MESA_EXTENSION_OVERRIDE": "GL_ARB_separate_shader_objects GL_ARB_explicit_attrib_location GL_ARB_gpu_shader5",
+                
+                # === MEMORY & CACHE ===
+                "MESA_SHADER_CACHE_DISABLE": "false",
+                "MESA_DISK_CACHE_SINGLE_FILE": "true",
+                "MESA_DISK_CACHE_COMBINE_WRITES": "true",
+                
+                # === ARCH LINUX SPECIFIC ===
+                "LD_PRELOAD": "/usr/lib/libjemalloc.so", # Tenta carregar jemalloc do Arch
+                "GALLIUM_HUD": "fps", # Opcional: mostra FPS no topo (pode remover se quiser)
+                "ST_DEBUG": "tgsi"
             }
         }
     ]
@@ -265,8 +285,8 @@ def get_compatibility_env(is_recent=True, profile_index=None):
             # NVIDIA: Usa perfil proprietário
             env.update(get_autotune_profiles()[5]["env"])
         elif sys_info["gpu_vendor"] == "intel":
-            # Intel: Usa perfil Intel HD Fix
-            env.update(get_autotune_profiles()[4]["env"])
+            # Intel: Agora usa o perfil GODMODE por padrão para performance extrema
+            env.update(get_autotune_profiles()[6]["env"])
         else:
             # Fallback: Mesa padrão
             env["mesa_glthread"] = "true"
