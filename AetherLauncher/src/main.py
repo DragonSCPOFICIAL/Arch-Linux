@@ -627,14 +627,14 @@ class AetherLauncherUI:
                 print(f"\n[FORGE-MODULE] Iniciando busca por Forge {vid}...")
                 set_status("Preparando Forge...")
                 try:
-                    # 1. Tentar encontrar o ID oficial via biblioteca
-                    forge_id = minecraft_launcher_lib.forge.find_forge_version(vid)
-                    
-                    # 2. Escaneamento Real no Disco (Para versões 1.21+)
+                    # 1. Escaneamento Real no Disco (Prioridade Máxima)
                     versions_dir = os.path.join(self.mc_dir, "versions")
                     found_on_disk = False
                     if os.path.exists(versions_dir):
-                        for folder in os.listdir(versions_dir):
+                        # Ordenar para pegar a versão mais recente/específica se houver múltiplas
+                        folders = sorted(os.listdir(versions_dir), reverse=True)
+                        for folder in folders:
+                            # Verifica se a pasta contém a versão base e a palavra 'forge'
                             if vid in folder and "forge" in folder.lower():
                                 json_path = os.path.join(versions_dir, folder, f"{folder}.json")
                                 if os.path.exists(json_path):
@@ -643,14 +643,16 @@ class AetherLauncherUI:
                                     found_on_disk = True
                                     break
                     
-                    # 3. Se não achou no disco, tenta instalar via biblioteca
-                    if not found_on_disk and forge_id:
-                        print(f"[FORGE-MODULE] Instalando via biblioteca: {forge_id}")
-                        minecraft_launcher_lib.forge.install_forge_version(forge_id, self.mc_dir, callback=callback)
-                        final_vid = forge_id
-                    elif not found_on_disk:
-                        print(f"[FORGE-MODULE] ✗ Forge não encontrado para {vid}")
-                        final_vid = vid
+                    # 2. Se não achou no disco, tenta encontrar o ID oficial e instalar
+                    if not found_on_disk:
+                        forge_id = minecraft_launcher_lib.forge.find_forge_version(vid)
+                        if forge_id:
+                            print(f"[FORGE-MODULE] Instalando via biblioteca: {forge_id}")
+                            minecraft_launcher_lib.forge.install_forge_version(forge_id, self.mc_dir, callback=callback)
+                            final_vid = forge_id
+                        else:
+                            print(f"[FORGE-MODULE] ✗ Forge não encontrado para {vid}")
+                            final_vid = vid
                 except Exception as e:
                     print(f"[FORGE-MODULE] ⚠ Erro no módulo Forge: {e}")
                     final_vid = vid
