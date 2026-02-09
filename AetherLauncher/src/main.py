@@ -16,7 +16,7 @@ ssl._create_default_https_context = ssl._create_unverified_context
 class AetherLauncherUI:
     def __init__(self, root):
         self.root = root
-        self.root.title("Aether Launcher v5.1-GODMODE - Minecraft Elite Linux (Performance Mode)")
+        self.root.title("Aether Launcher v5.2-OVERCLOCK - Minecraft Elite Linux (Performance Mode)")
         
         # Configuração de Janela
         window_width, window_height = 1050, 680
@@ -351,7 +351,11 @@ class AetherLauncherUI:
         self.perf_vars = {
             "use_aikar": tk.BooleanVar(value=self.data.get("use_aikar", True)),
             "use_high_priority": tk.BooleanVar(value=self.data.get("use_high_priority", True)),
-            "use_mesa_optim": tk.BooleanVar(value=self.data.get("use_mesa_optim", True))
+            "use_mesa_optim": tk.BooleanVar(value=self.data.get("use_mesa_optim", True)),
+            "use_gamemode": tk.BooleanVar(value=self.data.get("use_gamemode", False)),
+            "use_cpu_perf": tk.BooleanVar(value=self.data.get("use_cpu_perf", False)),
+            "use_zram_clean": tk.BooleanVar(value=self.data.get("use_zram_clean", False)),
+            "use_thp_optim": tk.BooleanVar(value=self.data.get("use_thp_optim", False))
         }
         
         tk.Checkbutton(f_perf, text="✓ Usar Aikar's Flags ULTRA (G1GC Extremo)", variable=self.perf_vars["use_aikar"], bg="#1a1a1a", fg="white", selectcolor="#333", activebackground="#1a1a1a").pack(anchor="w", pady=5)
@@ -372,6 +376,19 @@ class AetherLauncherUI:
             self.driver_var.set(self.driver_profiles[current_manual]["name"])
         else:
             self.driver_var.set("Nativo ULTRA (Mesa RADV Turbo)")
+
+        # === ABA LINUX POWER TWEAKS (AVANÇADO) ===
+        f_adv = tk.Frame(nb, bg="#1a1a1a", padx=20, pady=20)
+        nb.add(f_adv, text=" 🐧 Linux Power Tweaks ")
+        
+        tk.Label(f_adv, text="⚙️ OTIMIZAÇÕES DE SISTEMA (REQUER SUPORTE DO KERNEL)", font=("Segoe UI", 10, "bold"), bg="#1a1a1a", fg=self.colors["accent"]).pack(anchor="w", pady=(0, 10))
+        
+        tk.Checkbutton(f_adv, text="🚀 Feral GameMode (Otimiza CPU/GPU automaticamente)", variable=self.perf_vars["use_gamemode"], bg="#1a1a1a", fg="white", selectcolor="#333", activebackground="#1a1a1a").pack(anchor="w", pady=5)
+        tk.Checkbutton(f_adv, text="🔥 CPU Performance Governor (Força clock máximo)", variable=self.perf_vars["use_cpu_perf"], bg="#1a1a1a", fg="white", selectcolor="#333", activebackground="#1a1a1a").pack(anchor="w", pady=5)
+        tk.Checkbutton(f_adv, text="🧹 Limpeza de Cache & ZRAM (Libera RAM antes de iniciar)", variable=self.perf_vars["use_zram_clean"], bg="#1a1a1a", fg="white", selectcolor="#333", activebackground="#1a1a1a").pack(anchor="w", pady=5)
+        tk.Checkbutton(f_adv, text="🧠 Transparent Huge Pages (Otimiza alocação de memória)", variable=self.perf_vars["use_thp_optim"], bg="#1a1a1a", fg="white", selectcolor="#333", activebackground="#1a1a1a").pack(anchor="w", pady=5)
+        
+        tk.Label(f_adv, text="Nota: Algumas funções podem exigir privilégios ou pacotes instalados (gamemode).", font=("Segoe UI", 8), bg="#1a1a1a", fg="#666").pack(anchor="w", pady=(20, 0))
 
         # === ABA PERSONALIZAÇÃO ===
         f_custom = tk.Frame(nb, bg="#1a1a1a", padx=20, pady=20)
@@ -855,8 +872,22 @@ class AetherLauncherUI:
                 env = utils.get_compatibility_env(is_recent=(era in ["v21", "modern"]), profile_index=self.data["best_profile"])
                 print(f"[DRIVER] Usando perfil salvo: {self.data['best_profile']}")
 
+            # === APLICAR LINUX POWER TWEAKS ===
+            utils.apply_linux_tweaks(self.data)
+            
             # === INICIAR PROCESSO FINAL ===
             final_cmd = cmd
+            
+            # 1. Verificar GameMode
+            if self.data.get("use_gamemode", False):
+                try:
+                    # Verifica se gamemoderun existe
+                    subprocess.run(["gamemoderun", "--version"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                    final_cmd = ["gamemoderun"] + final_cmd
+                    print("[PERF] ✓ GameMode ATIVADO")
+                except:
+                    print("[PERF] ! GameMode não encontrado no sistema")
+
             if self.data.get("use_high_priority", True):
                 # Tentar aplicar prioridade alta, mas sem quebrar se falhar (permissão)
                 # No Linux, 'nice' negativo e 'ionice' classe 1 (realtime) exigem root ou caps.

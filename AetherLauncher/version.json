@@ -1,14 +1,15 @@
 {
-  "version": "5.1-GODMODE",
-  "build": 14,
+  "version": "5.2-OVERCLOCK",
+  "build": 15,
   "release_date": "2026-02-09",
   "update_check_url": "https://raw.githubusercontent.com/DragonSCPOFICIAL/Arch-Linux/main/AetherLauncher/version.json",
   "changelog": [
-    "Performance: Adicionado perfil GODMODE para GPUs Intel HD 3000/4000",
-    "Graphics: Otimização agressiva de OpenGL (Mesa i965 Turbo)",
-    "Core: Novo sistema de detecção automática priorizando GODMODE em hardware antigo",
-    "Memory: Integração com jemalloc para redução de stuttering",
-    "Fix: Ajuste de flags JVM para melhor estabilidade em Java 21"
+    "Feature: Nova aba 'Linux Power Tweaks' nas configurações",
+    "Performance: Suporte nativo ao Feral GameMode",
+    "System: Controle de CPU Performance Governor",
+    "Memory: Sistema de limpeza de Cache e ZRAM pré-jogo",
+    "Kernel: Otimização de Transparent Huge Pages (THP)",
+    "Core: Atualizado para Aether Launcher v5.2-OVERCLOCK"
   ],
   "download_url": "https://raw.githubusercontent.com/DragonSCPOFICIAL/Arch-Linux/main/AetherLauncher/",
   "min_version": "4.0.0"

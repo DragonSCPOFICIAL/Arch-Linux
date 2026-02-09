@@ -71,6 +71,41 @@ def get_gpu_info():
     info = get_system_info()
     return f"GPU: {info['gpu_vendor'].upper()} ({info['gpu_driver']}) | RAM: {info['ram_gb']}GB | Cores: {info['cpu_cores']} | Vulkan: {'✓' if info['has_vulkan'] else '✗'}"
 
+def apply_linux_tweaks(config):
+    """Aplica otimizações de sistema Linux baseadas na configuração."""
+    print("[LINUX] Aplicando Power Tweaks...")
+    
+    # 1. CPU Performance Governor
+    if config.get("use_cpu_perf"):
+        try:
+            print("[LINUX] Forçando CPU Performance Governor...")
+            # Tenta aplicar para todos os cores
+            subprocess.run(["sh", "-c", "echo performance | sudo tee /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor"], stderr=subprocess.DEVNULL)
+        except: pass
+
+    # 2. Limpeza de Cache & ZRAM
+    if config.get("use_zram_clean"):
+        try:
+            print("[LINUX] Limpando caches do sistema...")
+            subprocess.run(["sudo", "sync"], stderr=subprocess.DEVNULL)
+            subprocess.run(["sh", "-c", "echo 3 | sudo tee /proc/sys/vm/drop_caches"], stderr=subprocess.DEVNULL)
+        except: pass
+
+    # 3. Transparent Huge Pages (THP)
+    if config.get("use_thp_optim"):
+        try:
+            print("[LINUX] Otimizando Transparent Huge Pages...")
+            subprocess.run(["sh", "-c", "echo always | sudo tee /sys/kernel/mm/transparent_hugepage/enabled"], stderr=subprocess.DEVNULL)
+            subprocess.run(["sh", "-c", "echo always | sudo tee /sys/kernel/mm/transparent_hugepage/defrag"], stderr=subprocess.DEVNULL)
+        except: pass
+
+def enable_performance_mode():
+    """Ativa o modo de performance básico do sistema."""
+    try:
+        # Tenta desativar o sleep da GPU Intel (se existir)
+        subprocess.run(["sh", "-c", "echo 0 | sudo tee /sys/module/i915/parameters/enable_dc"], stderr=subprocess.DEVNULL)
+    except: pass
+
 def get_themes():
     """Retorna os temas de cores disponíveis para o launcher."""
     return {
