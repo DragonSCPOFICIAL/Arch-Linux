@@ -1,22 +1,20 @@
-# BRX AI - Autonomous Programmer Core (Nativo & Ilimitado)
+# BRX AI - Autonomous Programmer Core (Manus Local)
 
-Este é um agente de engenharia focado exclusivamente em **Desenvolvimento de Software**, **Hardware** e **Kernel Linux**. Ele utiliza o modelo **DeepSeek-Coder** rodando localmente para garantir privacidade total e zero custo de API.
-
-Agora, o BRX AI evoluiu para um **Agente Autônomo**, capaz de gerenciar seu próprio repositório Git, ler e editar arquivos, e manter o contexto completo do projeto.
+Este é um agente de engenharia autônomo focado em **Desenvolvimento de Software**, **Hardware** e **Kernel Linux**. Ele funciona como um "Manus Local", capaz de evoluir a linguagem **ULX** de forma independente diretamente no seu notebook.
 
 ---
 
-## 🎯 Foco do Agente
-- **Linguagens**: C, C++, Rust, Python, Assembly e criação de novas linguagens.
-- **Sistemas**: Otimização de Kernel Linux, módulos eBPF e drivers.
-- **Hardware**: Interação com CPU (AVX-512), GPU e gerenciamento de memória.
-- **Automação**: Gerenciamento autônomo de repositórios Git e edição de código.
+## 🎯 Capacidades do Agente
+- **Modo Autônomo**: Ciclo fechado de pensamento e ação para evoluir código.
+- **Conector de Identidade**: Integração nativa com Git sem necessidade de tokens manuais.
+- **Consciência de Contexto**: Analisa o repositório inteiro e o guia de evolução da ULX.
+- **Privacidade Total**: Roda 100% local via Ollama e DeepSeek-Coder.
 
 ---
 
-## 🛠️ Instalação Rápida
+## 🛠️ Instalação e Ativação
 
-Para configurar o motor de IA e o agente no seu notebook:
+Siga estes passos para configurar e rodar o seu agente:
 
 ### 1. Clonar e Acessar
 ```bash
@@ -24,8 +22,9 @@ git clone https://github.com/DragonSCPOFICIAL/Arch-Linux.git
 cd Arch-Linux/BRX_AI
 ```
 
-### 2. Configurar o Motor (DeepSeek Local)
-Este script instalará o Ollama e baixará o modelo `deepseek-coder:1.3b` (~800MB).
+### 2. Configurar o Motor e Permissões
+Este script instala o Ollama, baixa o modelo DeepSeek e configura as permissões de segurança do Git.
+**Nota:** É necessário dar permissão de execução ao script.
 ```bash
 chmod +x setup_engine.sh
 ./setup_engine.sh
@@ -38,27 +37,31 @@ python3 main.py
 
 ---
 
-## 💻 Comandos do Agente
+## 💻 Comandos Disponíveis
 
 | Comando | Descrição |
 | :--- | :--- |
-| `[Pergunta]` | Digite qualquer dúvida de código para a IA. Ela agora tem contexto do repositório! |
-| `sh [comando]` | Executa comandos diretamente no terminal Linux. |
-| `read [arquivo]` | Lê o conteúdo de um arquivo específico. |
-| `write [arquivo] [conteúdo]` | Escreve ou sobrescreve um arquivo. |
-| `lsfiles` | Lista todos os arquivos do repositório. |
+| `autonomo` | **Ativa o Modo Manus Local.** O agente começa a evoluir a linguagem ULX sozinho. |
+| `[Pergunta]` | Chat direto com a IA sobre código, hardware ou Linux. |
+| `sh [comando]` | Executa comandos no terminal do seu notebook. |
+| `git [comando]` | Gerencia o repositório (status, commit, push) via agente. |
+| `lsfiles` | Lista todos os arquivos do projeto. |
 | `summarize [arquivo]` | Gera um resumo inteligente do conteúdo de um arquivo. |
-| `context` | Mostra o contexto atual que a IA está utilizando. |
-| `git [comando]` | Executa comandos Git (ex: `git status`, `git commit -m "..."`). |
-| `sair` | Encerra o agente. |
+| `context` | Mostra o que a IA está "vendo" no momento (Arquivos + Guia ULX). |
+| `sair` | Encerra a sessão do agente. |
 
 ---
 
-## 🚀 Por que usar esta versão?
-- **Autônomo**: O agente pode gerenciar o código e o repositório por conta própria.
-- **Consciente**: A IA entende a estrutura do seu projeto através do contexto automático.
-- **Leve**: O modelo ocupa menos de 1GB de disco.
-- **Privado**: Nada sai do seu notebook.
-- **Ilimitado**: Sem taxas de API ou limites de tokens.
+## 🚀 Guia de Evolução ULX
+O agente segue as diretrizes do arquivo `ulx_evolution_guide.md` para garantir que a linguagem cresça com foco em:
+1. **Simplicidade** na sintaxe.
+2. **Performance** de baixo nível.
+3. **Integração** profunda com o Kernel Linux.
+
+---
+
+## ⚠️ Solução de Problemas
+- **Permission Denied:** Se receber erro ao rodar scripts, use `chmod +x nome_do_script.sh`.
+- **Erro de Conexão:** Certifique-se de que o Ollama está rodando (`ollama serve`).
 
 **Desenvolvido por DragonSCPOFICIAL & Manus AI**
