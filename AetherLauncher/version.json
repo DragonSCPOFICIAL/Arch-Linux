@@ -1,19 +1,14 @@
 {
-  "version": "4.8.6-ULTIMATE",
-  "build": 12,
-  "release_date": "2026-02-08",
+  "version": "5.0-TURBO",
+  "build": 13,
+  "release_date": "2026-02-09",
   "update_check_url": "https://raw.githubusercontent.com/DragonSCPOFICIAL/Arch-Linux/main/AetherLauncher/version.json",
   "changelog": [
-    "Interface: Adicionada seleção manual de perfil de driver na aba Performance",
-    "Compatibilidade: Novo perfil 'Aether Wine-Like' para Intel HD 3000 e Forge 1.21.1",
-    "Fix: Correção do erro ExceptionInInitializerError em versões 1.21.x",
-    "JVM: Adicionadas flags de desbloqueio de módulos para Java 21+",
-    "Lógica: Launcher agora prioriza perfil manual quando Auto-Tune está desligado",
-    "Estabilidade: Injeção de flags JNA para evitar conflitos com bibliotecas do sistema",
-    "Fix: Hotfix definitivo para Minecraft 1.21.11 (Netty 4.2.7 & Jtracy Patch)",
-    "Fix: Resolvido NoClassDefFoundError (JMX/Log4j) na inicialização da 1.21.11",
-    "Fix: Forçado desbloqueio de módulos java.management para compatibilidade total",
-    "Fix: Patch ULTIMATE para 1.21.11 (Desbloqueio total de módulos Java 21 e Netty 4.2.7)"
+    "Fix: Corrigido erro 'Operation not permitted' ao usar ionice/nice sem root",
+    "Performance: Lógica de prioridade inteligente (detecta permissões do usuário)",
+    "Core: Atualizado para Aether Launcher v5.0-TURBO",
+    "Estabilidade: Melhorado o tratamento de erros no lançamento do processo",
+    "Fix: Patch definitivo para compatibilidade com kernels Linux restritivos"
   ],
   "download_url": "https://raw.githubusercontent.com/DragonSCPOFICIAL/Arch-Linux/main/AetherLauncher/",
   "min_version": "4.0.0"

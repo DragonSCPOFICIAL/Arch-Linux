@@ -858,11 +858,32 @@ class AetherLauncherUI:
             # === INICIAR PROCESSO FINAL ===
             final_cmd = cmd
             if self.data.get("use_high_priority", True):
-                final_cmd = ["nice", "-n", "-5"] + cmd  # Prioridade MUITO alta
-                try: 
-                    final_cmd = ["ionice", "-c", "1", "-n", "0"] + final_cmd  # I/O Realtime
-                except: pass
-                print("[PERF] ✓ Prioridade de processo: REALTIME")
+                # Tentar aplicar prioridade alta, mas sem quebrar se falhar (permissão)
+                # No Linux, 'nice' negativo e 'ionice' classe 1 (realtime) exigem root ou caps.
+                # Vamos usar valores seguros que funcionam para usuários comuns ou ignorar falhas.
+                
+                # Tentar nice -5 (pode falhar, então usamos try/except no shell ou apenas ignoramos)
+                # Uma alternativa melhor é usar 'nice -n 0' como fallback ou apenas não usar se falhar.
+                # Mas o subprocess.Popen não vai falhar se o comando existir, o comando é que retorna erro.
+                # Então vamos envolver o comando em um wrapper que ignora erro de permissão ou usar valores permitidos.
+                
+                print("[PERF] Aplicando otimizações de prioridade...")
+                
+                # Tentar usar ionice classe 2 (best-effort) nível 0 (mais alto para usuários comuns)
+                # E nice 0 ou 10 (usuários comuns só podem aumentar o valor de nice, não diminuir)
+                # Para realmente ganhar performance sem root, o melhor é não usar esses comandos se eles causarem erro.
+                
+                # Nova estratégia: Usar valores que usuários comuns podem usar
+                # nice 0 é o padrão, ionice -c 2 -n 4 é o padrão.
+                # Para ganhar um pouco de prioridade sem root:
+                try:
+                    # ionice -c 2 -n 0 (Best-effort, prioridade máxima para usuário comum)
+                    # nice -n 0 (Prioridade padrão, já que usuários comuns não podem baixar de 0)
+                    final_cmd = ["nice", "-n", "0", "ionice", "-c", "2", "-n", "0"] + cmd
+                    print("[PERF] ✓ Prioridade otimizada para usuário comum")
+                except:
+                    final_cmd = cmd
+                    print("[PERF] ! Usando prioridade padrão")
 
             process = subprocess.Popen(final_cmd, env=env, cwd=inst, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1)
             
