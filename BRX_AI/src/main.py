@@ -14,23 +14,44 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from config import APP_NAME, APP_VERSION, WINDOW_WIDTH, WINDOW_HEIGHT
 from utils import logger, setup_logger
 from ui import create_interface
+from src.local_llm import LocalDeepSeekCoder
 
 # ============================================================================
 # CLASSE DO ENGINE DE IA
 # ============================================================================
 class BRXAIEngine:
-    """Motor principal da IA"""
+    """Motor principal da IA com suporte a modelo local DeepSeek-Coder"""
     
     def __init__(self):
         """Inicializa o engine de IA"""
         self.logger = setup_logger("BRXAIEngine")
+        self.local_llm = LocalDeepSeekCoder()
+        self.model_loaded = False
         self.logger.info("BRX AI Engine inicializado")
     
+    def load_local_model(self):
+        """Tenta carregar o modelo local"""
+        success, message = self.local_llm.load()
+        if success:
+            self.model_loaded = True
+            self.logger.info("DeepSeek-Coder carregado localmente.")
+        else:
+            self.logger.warning(f"Falha ao carregar modelo local: {message}")
+        return success, message
+
     def process(self, user_input):
         """Processa entrada do usuário"""
         self.logger.info(f"Processando: {user_input}")
-        # Implementar lógica de IA aqui
-        return f"Resposta para: {user_input}"
+        
+        if self.model_loaded:
+            try:
+                response = self.local_llm.generate(user_input)
+                return response
+            except Exception as e:
+                self.logger.error(f"Erro na geração local: {e}")
+                return f"Erro ao gerar resposta local: {e}"
+        
+        return f"BRX AI (Modo Offline/Simulação): Recebi sua mensagem: '{user_input}'. O modelo local DeepSeek-Coder não está carregado."
 
 # ============================================================================
 # CLASSE PRINCIPAL DO APLICATIVO

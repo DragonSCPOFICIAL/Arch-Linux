@@ -20,6 +20,9 @@
   - `tkinter` (geralmente incluído com Python)
   - `psutil` (será instalado automaticamente)
   - `pillow` (opcional, para processamento de imagens)
+- `transformers` (para execução do modelo local)
+- `torch` (para execução do modelo local)
+- `accelerate` (para otimização de hardware)
 
 ## 🚀 Instalação
 
@@ -262,12 +265,11 @@ FONTS = {
 
 ## 🚀 Roadmap
 
-- [ ] Integração com LLMs (GPT-4, Claude, etc.)
-- [ ] Suporte a plugins
-- [ ] Interface web alternativa
-- [ ] Sincronização em nuvem
-- [ ] Modo offline melhorado
-- [ ] Temas customizáveis
+- [x] Integração com DeepSeek-Coder (Local/Offline)
+- [ ] Suporte a plugins de sistema
+- [ ] Interface de Visão Computacional ativa
+- [ ] Sincronização de contexto entre sessões
+- [ ] Temas customizáveis (Neon/Glassmorphism)
 
 ## 📚 Referências
 
