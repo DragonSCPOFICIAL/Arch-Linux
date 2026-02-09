@@ -16,7 +16,7 @@ ssl._create_default_https_context = ssl._create_unverified_context
 class AetherLauncherUI:
     def __init__(self, root):
         self.root = root
-        self.root.title("Aether Launcher v5.2-OVERCLOCK - Minecraft Elite Linux (Performance Mode)")
+        self.root.title("Aether Launcher v6.0-ULTRA-INSTINCT - Minecraft Elite Linux (Performance Mode)")
         
         # Configuração de Janela
         window_width, window_height = 1050, 680
@@ -543,7 +543,7 @@ class AetherLauncherUI:
             inst = utils.get_instance_path(self.mc_dir, p["name"])
             
             print(f"\n{'='*70}")
-            print(f"AETHER LAUNCHER v5.0-TURBO | PERFORMANCE MODE ATIVO")
+            print(f"AETHER LAUNCHER v6.0-ULTRA-INSTINCT | PERFORMANCE MODE ATIVO")
             print(f"{'='*70}")
             print(f"Versão Minecraft: {vid}")
             print(f"Tipo: {p['type']}")

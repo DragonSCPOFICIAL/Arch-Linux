@@ -1,15 +1,14 @@
 {
-  "version": "5.2-OVERCLOCK",
-  "build": 15,
+  "version": "6.0-ULTRA-INSTINCT",
+  "build": 16,
   "release_date": "2026-02-09",
   "update_check_url": "https://raw.githubusercontent.com/DragonSCPOFICIAL/Arch-Linux/main/AetherLauncher/version.json",
   "changelog": [
-    "Feature: Nova aba 'Linux Power Tweaks' nas configurações",
-    "Performance: Suporte nativo ao Feral GameMode",
-    "System: Controle de CPU Performance Governor",
-    "Memory: Sistema de limpeza de Cache e ZRAM pré-jogo",
-    "Kernel: Otimização de Transparent Huge Pages (THP)",
-    "Core: Atualizado para Aether Launcher v5.2-OVERCLOCK"
+    "Major: Salto para a versão 6.0-ULTRA-INSTINCT",
+    "Feature: Menu Linux Power Tweaks totalmente funcional",
+    "Performance: Perfil GODMODE para Intel HD Graphics",
+    "System: Integração profunda com Kernel Linux e GameMode",
+    "Stability: Correção definitiva de permissões de processo (ionice/nice)"
   ],
   "download_url": "https://raw.githubusercontent.com/DragonSCPOFICIAL/Arch-Linux/main/AetherLauncher/",
   "min_version": "4.0.0"
