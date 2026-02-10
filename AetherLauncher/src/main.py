@@ -455,7 +455,7 @@ class AetherLauncherUI:
         t_v = tk.StringVar(value=edit_profile["type"] if edit_profile else "Vanilla")
         tf = tk.Frame(c, bg="#1a1a1a")
         tf.pack(fill="x", pady=15)
-        for t in ["Vanilla", "Forge", "Fabric"]: tk.Radiobutton(tf, text=t, variable=t_v, value=t, bg="#1a1a1a", fg="white", selectcolor="#333").pack(side="left", padx=10)
+        for t in ["Vanilla", "Forge", "Fabric", "Quilt", "NeoForge"]: tk.Radiobutton(tf, text=t, variable=t_v, value=t, bg="#1a1a1a", fg="white", selectcolor="#333").pack(side="left", padx=10)
         
         btn_frame = tk.Frame(c, bg="#1a1a1a")
         btn_frame.pack(side="bottom", fill="x", pady=20)
@@ -635,6 +635,27 @@ class AetherLauncherUI:
                     final_vid = f"fabric-loader-{fabric_loader}-{vid}"
                 except Exception as e:
                     print(f"[FABRIC] ✗ Erro: {e}")
+
+            if p["type"] == "Quilt":
+                print(f"\n[MODLOADER] Instalando Quilt...")
+                set_status("Instalando Quilt...")
+                try:
+                    quilt_loader = minecraft_launcher_lib.quilt.get_latest_loader_version()
+                    minecraft_launcher_lib.quilt.install_quilt(vid, self.mc_dir, loader_version=quilt_loader, callback=callback)
+                    final_vid = f"quilt-loader-{quilt_loader}-{vid}"
+                except Exception as e:
+                    print(f"[QUILT] ✗ Erro: {e}")
+
+            if p["type"] == "NeoForge":
+                print(f"\n[MODLOADER] Instalando NeoForge...")
+                set_status("Instalando NeoForge...")
+                try:
+                    # NeoForge usa uma lógica similar ao Forge moderno
+                    neoforge_version = minecraft_launcher_lib.mod_loader.Neoforge().get_latest_version(vid)
+                    minecraft_launcher_lib.mod_loader.Neoforge().install_version(neoforge_version, self.mc_dir, callback=callback)
+                    final_vid = neoforge_version
+                except Exception as e:
+                    print(f"[NEOFORGE] ✗ Erro: {e}")
 
             # 3. Download Vanilla (Apenas se for Vanilla puro ou se o modloader não foi instalado)
             if p["type"] == "Vanilla":

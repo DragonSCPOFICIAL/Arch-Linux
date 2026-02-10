@@ -39,11 +39,11 @@ class ExecutionBuilder:
                 with open(version_json_path, 'r') as f:
                     data = json.load(f)
                 
-                # Se houver herança ou for explicitamente Forge
-                is_forge = "forge" in version_id.lower() or "inheritsFrom" in data
+                # Se houver herança ou for explicitamente Forge/NeoForge
+                is_forge_like = any(x in version_id.lower() for x in ["forge", "neoforge"]) or "inheritsFrom" in data
                 
-                if is_forge:
-                    print("[ExecutionBuilder] Aplicando correções específicas para Forge...")
+                if is_forge_like:
+                    print(f"[ExecutionBuilder] Aplicando correções específicas para {version_id}...")
                     return ExecutionBuilder._fix_forge_command(command, data, minecraft_dir, version_id)
             except Exception as e:
                 print(f"[ExecutionBuilder] Erro ao analisar JSON da versão: {e}")
