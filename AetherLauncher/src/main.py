@@ -751,10 +751,10 @@ class AetherLauncherUI:
                 
                 java_opts = []
                 
-                # RAM
+                # RAM (Sincronizada com as configurações globais)
                 ram_mb = self.data.get("ram_mb", 4096)
-                java_opts.extend([f"-Xmx{ram_mb}M", f"-Xms{ram_mb//2}M"])
-                print(f"[CONFIG] RAM alocada: {ram_mb}MB")
+                java_opts.extend([f"-Xmx{ram_mb}M", f"-Xms{ram_mb}M"])
+                print(f"[CONFIG] RAM alocada: {ram_mb}MB (Xmx=Xms para estabilidade)")
                 
                 # Aikar's Flags ULTRA
                 if self.data.get("use_aikar", True):
@@ -841,8 +841,9 @@ class AetherLauncherUI:
                         env["LIBGL_ALWAYS_SOFTWARE"] = "1"
                         java_opts.append("-Dminecraft.applet.TargetDirectory=" + inst)
                 
-                env["_JAVA_OPTIONS"] = " ".join(java_opts)
-                print(f"[CONFIG] ✓ Java options aplicadas ({len(java_opts)} flags)")
+                # Usar JAVA_TOOL_OPTIONS em vez de _JAVA_OPTIONS para maior compatibilidade
+                env["JAVA_TOOL_OPTIONS"] = " ".join(java_opts)
+                print(f"[CONFIG] ✓ Java options aplicadas via JAVA_TOOL_OPTIONS ({len(java_opts)} flags)")
             
             set_status("Iniciando Minecraft...")
             
