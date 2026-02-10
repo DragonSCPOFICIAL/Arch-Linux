@@ -24,7 +24,8 @@ def get_system_info():
         "has_aes": False,
         "io_scheduler": "unknown",
         "swap_available": 0,
-        "cache_l3_mb": 0
+        "cache_l3_mb": 0,
+        "is_legacy_intel": False
     }
     
     try:
@@ -43,18 +44,19 @@ def get_system_info():
         with open('/proc/cpuinfo', 'r') as f:
             content = f.read()
             # Extrair modelo
-            for line in content.split('\n'):
-                if line.startswith('model name'):
-                    info["cpu_model"] = line.split(':', 1)[1].strip()
+            for line in content.split(                if line.startswith(\'model name\'):
+                    info["cpu_model"] = line.split(\':\', 1)[1].strip()
+                    # Detectar arquitetura da CPU
+                    if "sandy bridge" in info["cpu_model"].lower():
+                        info["is_legacy_intel"] = True
                     break
             # Detectar flags de CPU
-            if 'avx2' in content:
+            if \'avx2\' in content:
                 info["has_avx2"] = True
-            if 'fma' in content:
+            if \'fma\' in content:
                 info["has_fma"] = True
-            if 'aes' in content:
-                info["has_aes"] = True
-    except: pass
+            if \'aes\' in content:
+                info["has_aes"] = True  except: pass
 
     try:
         # Detectar versão do kernel
@@ -88,23 +90,30 @@ def get_system_info():
             
         elif "intel" in lspci_output:
             info["gpu_vendor"] = "intel"
-            info["gpu_driver"] = "i965"
+            # Detectar geração da GPU Intel para escolher driver
+            if "sandybridge" in lspci_output or "ivybridge" in lspci_output:
+                info["gpu_driver"] = "crocus" # Gen6/7
+                info["is_legacy_intel"] = True
+            elif "haswell" in lspci_output or "broadwell" in lspci_output:
+                info["gpu_driver"] = "iris" # Gen7.5/8
+            else:
+                info["gpu_driver"] = "i965" # Fallback ou Gen9+
         
         # Verificar suporte a Vulkan e versão
         try:
-            vulkan_res = subprocess.run(['vulkaninfo', '--summary'], capture_output=True, text=True, timeout=2)
+            vulkan_res = subprocess.run([\'vulkaninfo\', \'--summary\'], capture_output=True, text=True, timeout=2)
             info["has_vulkan"] = vulkan_res.returncode == 0
             if info["has_vulkan"] and "Vulkan" in vulkan_res.stdout:
-                for line in vulkan_res.stdout.split('\n'):
-                    if 'Vulkan' in line and 'Version' in line:
-                        info["vulkan_version"] = line.split('Version')[1].strip()[:10]
+                for line in vulkan_res.stdout.split(\'\\n\'):
+                    if \'Vulkan\' in line and \'Version\' in line:
+                        info["vulkan_version"] = line.split(\'Version\')[1].strip()[:10]
         except: pass
         
         # Detectar versão do Mesa
         try:
-            glxinfo = subprocess.check_output(['glxinfo'], capture_output=True, text=True, timeout=2)
-            for line in glxinfo.split('\n'):
-                if 'OpenGL version' in line or 'Mesa' in line:
+            glxinfo = subprocess.check_output([\'glxinfo\'], capture_output=True, text=True, timeout=2)
+            for line in glxinfo.split(\'\\n\'):
+                if \'OpenGL version\' in line or \'Mesa\' in line:
                     info["mesa_version"] = line.strip()[:50]
         except: pass
     except: pass
@@ -397,13 +406,14 @@ def get_autotune_profiles():
             "env": {
                 # === MESA INTEL OPTIMIZATION ===
                 "INTEL_DEBUG": "nofc,norbc",
-                "MESA_LOADER_DRIVER_OVERRIDE": "i965",
+                "MESA_LOADER_DRIVER_OVERRIDE": "crocus", # Driver moderno para Gen6/7
                 "mesa_glthread": "true",
-                "MESA_GL_VERSION_OVERRIDE": "4.5COMPAT",
+                "MESA_GL_VERSION_OVERRIDE": "4.5",
                 "MESA_GLSL_VERSION_OVERRIDE": "450",
                 
                 # === PERFORMANCE BOOST ===
                 "vblank_mode": "0",
+                "MESA_NO_ERROR": "1", # Performance pura
                 "allow_glsl_extension_directive_midshader": "true",
                 "MESA_EXTENSION_OVERRIDE": "GL_ARB_separate_shader_objects GL_ARB_explicit_attrib_location GL_ARB_gpu_shader5",
                 
@@ -416,36 +426,75 @@ def get_autotune_profiles():
                 "LD_PRELOAD": "/usr/lib/libjemalloc.so",
                 "ST_DEBUG": "tgsi"
             }
+        },
+        {
+            "id": 7,
+            "name": "Legacy Boost Mode (Sandy Bridge i7-2760QM)",
+            "env": {
+                "MESA_LOADER_DRIVER_OVERRIDE": "crocus",
+                "MESA_GL_VERSION_OVERRIDE": "4.4",
+                "MESA_GLSL_VERSION_OVERRIDE": "440",
+                "MESA_NO_ERROR": "1",
+                "vblank_mode": "0",
+                "mesa_glthread": "true",
+                "INTEL_DEBUG": "nofc,norbc,no3d",
+                "MESA_SHADER_CACHE_MAX_SIZE": "512M", # Cache menor para RAM limitada
+                "LD_PRELOAD": "/usr/lib/libjemalloc.so.2",
+                "SDL_VIDEO_MIN_VBLANKS": "0"
+            }
         }
     ]
 
 def get_compatibility_env(is_recent=True, profile_index=None):
     """
     Configura o ambiente Linux ULTRA OTIMIZADO para o Minecraft (versão EXTREMA).
+    Implementa detecção automática de hardware e injeção dinâmica de drivers.
     """
     env = os.environ.copy()
     sys_info = get_system_info()
-    
-    # === APLICAR PERFIL DE AUTO-TUNE ===
+    profiles = get_autotune_profiles()
+
+    # Prioridade para perfil manual se especificado
     if profile_index is not None:
-        profiles = get_autotune_profiles()
         if 0 <= profile_index < len(profiles):
             selected_profile = profiles[profile_index]
-            print(f"[PERF] Aplicando perfil: {selected_profile['name']}")
+            print(f"[PERF] Aplicando perfil manual: {selected_profile[\"name\"]}")
             env.update(selected_profile["env"])
-    else:
-        # === CONFIGURAÇÃO PADRÃO INTELIGENTE (AUTO-DETECT GPU) ===
-        if sys_info["gpu_vendor"] == "amd":
-            env.update(get_autotune_profiles()[0]["env"])
-        elif sys_info["gpu_vendor"] == "nvidia":
-            env.update(get_autotune_profiles()[5]["env"])
-        elif sys_info["gpu_vendor"] == "intel":
-            env.update(get_autotune_profiles()[6]["env"])
+            return env
         else:
-            env["mesa_glthread"] = "true"
-            env["MESA_GL_VERSION_OVERRIDE"] = "4.6" if is_recent else "3.2"
-            env["vblank_mode"] = "0"
-    
+            print(f"[WARN] Índice de perfil {profile_index} inválido. Tentando auto-detecção.")
+
+    # === AUTO-TUNE AVANÇADO: Detectar melhor perfil com base no hardware ===
+    selected_profile_env = {}
+    if sys_info["gpu_vendor"] == "amd":
+        if "radv" in sys_info["gpu_driver"]:
+            print("[PERF] Auto-Tune: Nativo ULTRA (Mesa RADV Turbo 26.0+)")
+            selected_profile_env = profiles[0]["env"]
+        else:
+            print("[PERF] Auto-Tune: AMD Universal (AMDGPU)")
+            selected_profile_env = profiles[4]["env"]
+    elif sys_info["gpu_vendor"] == "nvidia":
+        print("[PERF] Auto-Tune: NVIDIA Proprietário 2026+")
+        selected_profile_env = profiles[5]["env"]
+    elif sys_info["gpu_vendor"] == "intel":
+        if sys_info["is_legacy_intel"]:
+            print("[PERF] Auto-Tune: Legacy Boost Mode (Sandy Bridge i7-2760QM)")
+            selected_profile_env = profiles[7]["env"]
+        elif sys_info["gpu_driver"] == "iris":
+            print("[PERF] Auto-Tune: Intel Iris/UHD (Modern)")
+            selected_profile_env = profiles[2]["env"]
+        elif sys_info["gpu_driver"] == "crocus":
+            print("[PERF] Auto-Tune: Intel HD 3000 EXTREME (Crocus)")
+            selected_profile_env = profiles[6]["env"]
+        else:
+            print("[PERF] Auto-Tune: Intel Gen9+ (i965/Iris Fallback)")
+            selected_profile_env = profiles[2]["env"] # Fallback para Iris/Modern
+    else:
+        print("[PERF] Auto-Tune: Padrão (Compatibilidade Universal)")
+        selected_profile_env = profiles[3]["env"] # Perfil de compatibilidade geral
+
+    env.update(selected_profile_env)
+
     # === LIBRARY PATH (CRÍTICO) ===
     sys_paths = [
         "/usr/lib/x86_64-linux-gnu",
@@ -470,7 +519,7 @@ def get_compatibility_env(is_recent=True, profile_index=None):
     
     if preload_libs:
         env["LD_PRELOAD"] = ":".join(preload_libs)
-        print(f"[PERF] LD_PRELOAD ativo: {env['LD_PRELOAD']}")
+        print(f"[PERF] LD_PRELOAD ativo: {env[\"LD_PRELOAD\"]}")
     
     # === WINDOW MANAGER E COMPOSITOR (X11 OTIMIZADO) ===
     env["_JAVA_AWT_WM_NONREPARENTING"] = "1"
@@ -492,7 +541,7 @@ def get_compatibility_env(is_recent=True, profile_index=None):
             gov_path = f"/sys/devices/system/cpu/cpu{cpu}/cpufreq/scaling_governor"
             if os.path.exists(gov_path):
                 try:
-                    subprocess.run(['sudo', 'sh', '-c', f'echo performance > {gov_path}'], 
+                    subprocess.run([\"sudo\", \"sh\", \"-c\", f\"echo performance > {gov_path}\"], 
                                    timeout=1, capture_output=True)
                 except:
                     pass
@@ -504,8 +553,16 @@ def get_compatibility_env(is_recent=True, profile_index=None):
     env["mesa_glthread"] = "true"
     
     # === JAVA SPECIFIC ===
-    env["JAVA_TOOL_OPTIONS"] = "-XX:+UseZGC -XX:+ZGenerational"
-    
+    # As flags JVM agora são injetadas pelo ExecutionBuilderExtreme, não aqui.
+    # No entanto, podemos adicionar flags genéricas que não dependem de AVX2 aqui se necessário.
+    # Por exemplo, para CPUs Sandy Bridge, podemos evitar flags que exigem AVX2.
+    if not sys_info["has_avx2"]:
+        print("[PERF] Detectado CPU sem AVX2. Ajustando JAVA_TOOL_OPTIONS para compatibilidade.")
+        # Exemplo de flags JVM seguras para CPUs mais antigas
+        env["JAVA_TOOL_OPTIONS"] = "-XX:+UseG1GC -XX:MaxGCPauseMillis=50 -XX:+UnlockExperimentalVMOptions -XX:+UseJVMCICompiler -XX:+EnableJVMCI -XX:JVMCICompiler=graal"
+    else:
+        env["JAVA_TOOL_OPTIONS"] = "-XX:+UseZGC -XX:+ZGenerational"
+
     return env
 
 def get_performance_args():
