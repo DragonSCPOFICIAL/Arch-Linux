@@ -494,7 +494,8 @@ def get_instance_path(base_dir, profile_name):
         os.path.join(path, "screenshots"),
         os.path.join(path, "saves"),
         os.path.join(path, "config"),
-        os.path.join(path, "logs")
+        os.path.join(path, "logs"),
+        os.path.join(path, "natives")
     ]
     
     for d in directories:

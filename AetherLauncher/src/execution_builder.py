@@ -17,7 +17,14 @@ class ExecutionBuilder:
         """
         print(f"[ExecutionBuilder] Construindo comando para: {version_id}")
         
-        # 1. Tentar obter o comando padrão via biblioteca
+        # 1. Garantir que a pasta natives exista para a instância
+        game_dir = options.get("gameDirectory")
+        if game_dir:
+            natives_dir = os.path.join(game_dir, "natives")
+            os.makedirs(natives_dir, exist_ok=True)
+            options["nativePath"] = natives_dir
+
+        # 2. Tentar obter o comando padrão via biblioteca
         try:
             command = minecraft_launcher_lib.command.get_minecraft_command(version_id, minecraft_dir, options)
         except Exception as e:
