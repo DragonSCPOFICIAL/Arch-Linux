@@ -699,7 +699,8 @@ class AetherLauncherUI:
                 "token": "",
                 "gameDirectory": inst,
                 "launcherName": "AetherLauncher",
-                "launcherVersion": "5.0-TURBO"
+                "launcherVersion": "5.0-TURBO",
+                "jvmArguments": [f"-Xmx{self.data.get('ram_mb', 4096)}M", f"-Xms{self.data.get('ram_mb', 4096)}M"]
             }
             
             skin_url = self.data.get("skin_url")
