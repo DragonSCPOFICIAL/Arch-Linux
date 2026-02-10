@@ -9,6 +9,7 @@ import time
 from PIL import Image, ImageTk
 import minecraft_launcher_lib
 import utils
+from execution_builder import ExecutionBuilder
 
 # Configurações globais
 ssl._create_default_https_context = ssl._create_unverified_context
@@ -709,10 +710,10 @@ class AetherLauncherUI:
                 options["executablePath"] = java_executable
                 print(f"[LAUNCH] Usando Java: {java_executable}")
             
-            print(f"[LAUNCH] Gerando comando de execução...")
-            cmd = minecraft_launcher_lib.command.get_minecraft_command(
-                version=final_vid,
-                minecraft_directory=self.mc_dir,
+            print(f"[LAUNCH] Gerando comando de execução (via ExecutionBuilder)...")
+            cmd = ExecutionBuilder.build_command(
+                version_id=final_vid,
+                minecraft_dir=self.mc_dir,
                 options=options
             )
             
