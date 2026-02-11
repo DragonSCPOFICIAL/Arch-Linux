@@ -25,7 +25,7 @@ sudo cp -r ./* "$INSTALL_DIR/"
 echo "[3/5] Verificando dependências do sistema e Python..."
 if command -v pacman &> /dev/null; then
     # Arch Linux
-    sudo pacman -S --noconfirm python-pillow python-requests python-pip tk openjdk17-jre
+    sudo pacman -S --noconfirm python-pillow python-requests python-pip python-tk jre17-openjdk
 elif command -v apt &> /dev/null; then
     # Debian/Ubuntu
     sudo apt update && sudo apt install -y python3-pil python3-requests python3-pip python3-tk openjdk-17-jre
@@ -34,7 +34,7 @@ else
 fi
 
 # Instalar bibliotecas Python necessárias
-sudo pip3 install minecraft-launcher-lib --break-system-packages --quiet
+sudo pip3 install minecraft-launcher-lib Pillow requests --break-system-packages --quiet
 
 # 4. Configurar Executável
 echo "[4/5] Configurando permissões e links..."
