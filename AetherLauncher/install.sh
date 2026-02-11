@@ -35,6 +35,8 @@ fi
 
 # Instalar bibliotecas Python necessárias
 sudo pip3 install minecraft-launcher-lib Pillow requests --break-system-packages --quiet
+    # Garantir que minecraft-launcher-lib esteja acessível
+    python3 -m pip install minecraft-launcher-lib --break-system-packages --quiet
 
 # 4. Configurar Executável
 echo "[4/5] Configurando permissões e links..."

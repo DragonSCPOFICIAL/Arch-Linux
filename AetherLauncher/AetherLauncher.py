@@ -29,7 +29,7 @@ class LauncherManager:
         # Criar um frame container para a interface
         self.container = tk.Frame(self.root, bg="#0a0a0a")
         self.container.pack(fill="both", expand=True)
-        self.current_app = AetherLauncherUI(self.container)
+        self.current_app = AetherLauncherUI(self.root, self.container)
         self.add_switch_button()
         
     def launch_extreme(self):
@@ -37,7 +37,7 @@ class LauncherManager:
         self.mode = "extreme"
         self.container = tk.Frame(self.root, bg="#0a0a0a")
         self.container.pack(fill="both", expand=True)
-        self.current_app = AetherLauncherUIExtreme(self.container)
+        self.current_app = AetherLauncherUIExtreme(self.root, self.container)
         self.add_switch_button()
 
     def add_switch_button(self):

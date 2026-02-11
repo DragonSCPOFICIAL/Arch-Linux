@@ -15,15 +15,17 @@ from execution_builder_extreme import ExecutionBuilderExtreme as ExecutionBuilde
 ssl._create_default_https_context = ssl._create_unverified_context
 
 class AetherLauncherUIExtreme:
-    def __init__(self, root):
-        self.root = root
-        self.root.title("Aether Launcher v7.0-EXTREME - Minecraft Elite Linux (Absurd Performance)")
+    def __init__(self, main_root, container_frame):
+        self.main_root = main_root
+        self.container_frame = container_frame
+        self.root = container_frame
+        self.main_root.title("Aether Launcher v7.0-EXTREME - Minecraft Elite Linux (Absurd Performance)")
         
         # Configuração de Janela
         window_width, window_height = 1050, 680
-        sw, sh = self.root.winfo_screenwidth(), self.root.winfo_screenheight()
-        self.root.geometry(f"{window_width}x{window_height}+{(sw-window_width)//2}+{(sh-window_height)//2}")
-        self.root.resizable(False, False)
+        sw, sh = self.main_root.winfo_screenwidth(), self.main_root.winfo_screenheight()
+        self.main_root.geometry(f"{window_width}x{window_height}+{(sw-window_width)//2}+{(sh-window_height)//2}")
+        self.main_root.resizable(False, False)
         
         # Cores
         self.colors = {"accent": "#B43D3D"}
