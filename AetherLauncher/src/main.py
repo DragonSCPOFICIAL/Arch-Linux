@@ -456,7 +456,9 @@ class AetherLauncherUI:
         t_v = tk.StringVar(value=edit_profile["type"] if edit_profile else "Vanilla")
         tf = tk.Frame(c, bg="#1a1a1a")
         tf.pack(fill="x", pady=15)
-        for t in ["Vanilla", "Forge", "Fabric", "Quilt", "NeoForge"]: tk.Radiobutton(tf, text=t, variable=t_v, value=t, bg="#1a1a1a", fg="white", selectcolor="#333").pack(side="left", padx=10)
+        # Modo Padrão: Apenas Vanilla, sem mods
+        tk.Radiobutton(tf, text="Vanilla", variable=t_v, value="Vanilla", bg="#1a1a1a", fg="white", selectcolor="#333").pack(side="left", padx=10)
+        tk.Label(tf, text="(Modo Padrão: Apenas Vanilla)", bg="#1a1a1a", fg="#888", font=("Segoe UI", 8)).pack(side="left", padx=10)
         
         btn_frame = tk.Frame(c, bg="#1a1a1a")
         btn_frame.pack(side="bottom", fill="x", pady=20)
@@ -595,71 +597,14 @@ class AetherLauncherUI:
             final_vid = vid
             
             # === LÓGICA DE INSTALAÇÃO INTELIGENTE (EVITA DUPLICAÇÃO) ===
-            if p["type"] == "Forge":
-                print(f"\n[FORGE-MODULE] Iniciando busca por Forge {vid}...")
-                set_status("Preparando Forge...")
-                try:
-                    # 1. Escaneamento Real no Disco (Prioridade Máxima)
-                    versions_dir = os.path.join(self.mc_dir, "versions")
-                    found_on_disk = False
-                    if os.path.exists(versions_dir):
-                        folders = sorted(os.listdir(versions_dir), reverse=True)
-                        for folder in folders:
-                            if vid in folder and "forge" in folder.lower():
-                                json_path = os.path.join(versions_dir, folder, f"{folder}.json")
-                                if os.path.exists(json_path):
-                                    print(f"[FORGE-MODULE] ✓ Forge detectado no disco: {folder}")
-                                    final_vid = folder
-                                    found_on_disk = True
-                                    break
-                    
-                    # 2. Se não achou no disco, instala o Forge (isso já baixa as dependências vanilla necessárias)
-                    if not found_on_disk:
-                        forge_id = minecraft_launcher_lib.forge.find_forge_version(vid)
-                        if forge_id:
-                            print(f"[FORGE-MODULE] Instalando Forge: {forge_id}")
-                            set_status(f"Instalando Forge {vid}...")
-                            minecraft_launcher_lib.forge.install_forge_version(forge_id, self.mc_dir, callback=callback)
-                            final_vid = forge_id
-                        else:
-                            print(f"[FORGE-MODULE] ✗ Forge não encontrado para {vid}, usando Vanilla")
-                            p["type"] = "Vanilla" # Fallback para vanilla se o forge falhar
-                except Exception as e:
-                    print(f"[FORGE-MODULE] ⚠ Erro no módulo Forge: {e}")
+            # Modo Padrão: Apenas Vanilla, sem suporte a mods
+            # Qualquer tentativa de usar outro tipo será convertida para Vanilla
+            if p["type"] != "Vanilla":
+                print(f"[VANILLA-ONLY] Tipo '{p['type']}' não é suportado no Modo Padrão. Usando Vanilla.")
+                p["type"] = "Vanilla"
 
-            if p["type"] == "Fabric":
-                print(f"\n[MODLOADER] Instalando Fabric...")
-                set_status("Instalando Fabric...")
-                try:
-                    fabric_loader = minecraft_launcher_lib.fabric.get_latest_loader_version()
-                    minecraft_launcher_lib.fabric.install_fabric(vid, self.mc_dir, loader_version=fabric_loader, callback=callback)
-                    final_vid = f"fabric-loader-{fabric_loader}-{vid}"
-                except Exception as e:
-                    print(f"[FABRIC] ✗ Erro: {e}")
-
-            if p["type"] == "Quilt":
-                print(f"\n[MODLOADER] Instalando Quilt...")
-                set_status("Instalando Quilt...")
-                try:
-                    quilt_loader = minecraft_launcher_lib.quilt.get_latest_loader_version()
-                    minecraft_launcher_lib.quilt.install_quilt(vid, self.mc_dir, loader_version=quilt_loader, callback=callback)
-                    final_vid = f"quilt-loader-{quilt_loader}-{vid}"
-                except Exception as e:
-                    print(f"[QUILT] ✗ Erro: {e}")
-
-            if p["type"] == "NeoForge":
-                print(f"\n[MODLOADER] Instalando NeoForge...")
-                set_status("Instalando NeoForge...")
-                try:
-                    # NeoForge usa uma lógica similar ao Forge moderno
-                    neoforge_version = minecraft_launcher_lib.mod_loader.Neoforge().get_latest_version(vid)
-                    minecraft_launcher_lib.mod_loader.Neoforge().install_version(neoforge_version, self.mc_dir, callback=callback)
-                    final_vid = neoforge_version
-                except Exception as e:
-                    print(f"[NEOFORGE] ✗ Erro: {e}")
-
-            # 3. Download Vanilla (Apenas se for Vanilla puro ou se o modloader não foi instalado)
-            if p["type"] == "Vanilla":
+            # Download Vanilla
+            if True:
                 print(f"\n[DOWNLOAD] Iniciando download do Minecraft {vid}...")
                 set_status(f"Baixando Minecraft {vid}...")
                 minecraft_launcher_lib.install.install_minecraft_version(vid, self.mc_dir, callback=callback)

@@ -86,7 +86,7 @@ class AetherLauncherUIExtreme:
             "last_profile": "p_default",
             "avatar": "steve.png",
             "profiles": [
-                {"name": "Minecraft 1.21", "version": "1.21", "type": "Vanilla", "id": "p_default", "compatibility_mode": True}
+                {"name": "Minecraft Modded", "version": "1.21", "type": "Forge", "id": "p_default", "compatibility_mode": True}
             ],
             "use_autotune": True,
             "use_aikar": True,
