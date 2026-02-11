@@ -33,7 +33,7 @@ class AetherLauncherUIExtreme:
         self.base_dir = os.path.dirname(self.script_dir)
         self.config_dir = os.path.expanduser("~/.config/aetherlauncher")
         self.data_file = os.path.join(self.config_dir, "launcher_data_extreme.json")
-        self.mc_dir = os.path.expanduser("~/.aetherlauncher/minecraft")
+        self.mc_dir = os.path.expanduser("~/.aetherlauncher/minecraft_extreme") # Pasta isolada para o modo extreme
         self.assets_dir = os.path.join(self.base_dir, "assets")
         self.icons_dir = os.path.join(self.assets_dir, "icons")
         self.avatars_dir = os.path.join(self.assets_dir, "avatars")
@@ -108,14 +108,16 @@ class AetherLauncherUIExtreme:
             json.dump(self.data, f, indent=4)
 
     def fetch_versions(self):
+        """Busca todas as versões e prepara o motor para Forge/Modloaders."""
         try:
             versions = minecraft_launcher_lib.utils.get_version_list()
-            releases = [v['id'] for v in versions if v['type'] == 'release']
-            self.mc_versions = releases
-            print(f"[INFO] {len(self.mc_versions)} versões disponíveis")
+            # No modo extreme, mostramos releases e snapshots se o usuário quiser, 
+            # mas por padrão liberamos tudo para o motor de instalação.
+            self.mc_versions = [v['id'] for v in versions]
+            print(f"[EXTREME-MODE] {len(self.mc_versions)} versões totais disponíveis (Forge Habilitado)")
         except Exception as e:
             print(f"[WARN] Erro ao buscar versões: {e}")
-            self.mc_versions = ["1.21.4", "1.21", "1.20.1", "1.19.4", "1.18.2", "1.16.5", "1.12.2", "1.8.9"]
+            self.mc_versions = ["1.21.4", "1.20.1", "1.18.2", "1.16.5", "1.12.2", "1.8.9", "1.7.10"]
 
     def get_photo(self, name, path, size):
         if name in self.img_cache: return self.img_cache[name]

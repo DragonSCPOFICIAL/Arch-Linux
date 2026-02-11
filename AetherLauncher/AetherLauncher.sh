@@ -25,13 +25,13 @@ export vblank_mode=0
 
 # Iniciar a Interface com prioridade normal (o Minecraft será iniciado com prioridade alta pelo Python)
 echo "Lançando interface..." | tee -a "$LOG_FILE"
-python3 "$BASE_DIR/src/main.py" "$@" 2>>"$LOG_FILE"
+python3 "$BASE_DIR/AetherLauncher.py" "$@" 2>>"$LOG_FILE"
 
 if [ $? -ne 0 ]; then
     echo "A interface fechou com erro. Verifique $LOG_FILE para detalhes."
     # Se falhar, tenta um modo de segurança sem aceleração para a UI
     if [[ "$*" != *"--safe-mode"* ]]; then
         echo "Tentando modo de segurança..."
-        LIBGL_ALWAYS_SOFTWARE=1 python3 "$BASE_DIR/src/main.py" --safe-mode 2>>"$LOG_FILE"
+        LIBGL_ALWAYS_SOFTWARE=1 python3 "$BASE_DIR/AetherLauncher.py" --safe-mode 2>>"$LOG_FILE"
     fi
 fi

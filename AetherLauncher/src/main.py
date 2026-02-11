@@ -105,15 +105,16 @@ class AetherLauncherUI:
             json.dump(self.data, f, indent=4)
 
     def fetch_versions(self):
-        """Busca versões disponíveis, priorizando as mais recentes."""
+        """Busca apenas versões Vanilla Release para o modo padrão."""
         try:
             versions = minecraft_launcher_lib.utils.get_version_list()
+            # Filtrar estritamente para Vanilla Release
             releases = [v['id'] for v in versions if v['type'] == 'release']
             self.mc_versions = releases
-            print(f"[INFO] {len(self.mc_versions)} versões disponíveis")
+            print(f"[VANILLA-ONLY] {len(self.mc_versions)} versões vanilla carregadas")
         except Exception as e:
             print(f"[WARN] Erro ao buscar versões: {e}")
-            self.mc_versions = ["1.21.4", "1.21", "1.20.1", "1.19.4", "1.18.2", "1.16.5", "1.12.2", "1.8.9"]
+            self.mc_versions = ["1.21.4", "1.21", "1.20.1"]
 
     def get_photo(self, name, path, size):
         """Carrega e mantém a imagem no cache para evitar coleta de lixo"""
