@@ -238,7 +238,6 @@ class AetherLauncherUIExtreme:
         
         nick_entry = tk.Entry(self.active_content_frame, font=("Segoe UI", 14), bg="#333", fg="white", bd=0, insertbackground="white")
         nick_entry.pack(fill="x", pady=20, ipady=8)
-        nick_entry.insert(0, self.username)
         
         tk.Button(self.active_content_frame, text="CONTINUAR", bg=self.colors["accent"], fg="white", font=("Segoe UI", 12, "bold"), bd=0, pady=10, cursor="hand2", command=lambda: self.set_username(nick_entry.get())).pack(fill="x")
 
@@ -365,20 +364,59 @@ class AetherLauncherUIExtreme:
             callback = {"setStatus": set_status, "setProgress": set_progress, "setMax": set_max}
             
             final_vid = vid
-            # Lógica de instalação (simplificada para este exemplo, usa a lib)
-            if p["type"] == "Forge":
-                forge_id = minecraft_launcher_lib.forge.find_forge_version(vid)
-                if forge_id:
-                    minecraft_launcher_lib.forge.install_forge_version(forge_id, self.mc_dir, callback=callback)
-                    final_vid = forge_id
-            elif p["type"] == "Fabric":
-                fabric_loader = minecraft_launcher_lib.fabric.get_latest_loader_version()
-                minecraft_launcher_lib.fabric.install_fabric(vid, self.mc_dir, loader_version=fabric_loader, callback=callback)
-                final_vid = f"fabric-loader-{fabric_loader}-{vid}"
-            elif p["type"] == "Vanilla":
-                minecraft_launcher_lib.install.install_minecraft_version(vid, self.mc_dir, callback=callback)
             
-            # Preparar opções
+            # === LÓGICA DE INSTALAÇÃO DO FORGE (MODO EXTREME) ===
+            if p["type"] == "Forge":
+                print(f"[FORGE-INSTALLER] Iniciando instalacao do Forge para versao {vid}...")
+                set_status(f"Instalando Forge {vid}...")
+                
+                try:
+                    # 1. Instalar a versao vanilla primeiro (se nao estiver instalada)
+                    print(f"[FORGE-INSTALLER] Verificando versao vanilla {vid}...")
+                    set_status(f"Preparando versao base {vid}...")
+                    minecraft_launcher_lib.install.install_minecraft_version(vid, self.mc_dir, callback=callback)
+                    
+                    # 2. Obter o loader do Forge
+                    print(f"[FORGE-INSTALLER] Obtendo loader do Forge...")
+                    forge_loader = minecraft_launcher_lib.mod_loader.get_mod_loader("forge")
+                    
+                    # 3. Instalar o Forge
+                    print(f"[FORGE-INSTALLER] Instalando Forge para {vid}...")
+                    set_status(f"Instalando Forge {vid} (isso pode levar um tempo)...")
+                    forge_loader.install(vid, self.mc_dir, callback=callback)
+                    
+                    print(f"[FORGE-INSTALLER] Forge instalado com sucesso para {vid}")
+                    final_vid = vid  # O Forge sera detectado automaticamente
+                    
+                except Exception as e:
+                    print(f"[FORGE-INSTALLER] Erro ao instalar Forge: {e}")
+                    set_status(f"Erro ao instalar Forge: {str(e)[:50]}...")
+                    self.root.after(0, lambda: messagebox.showerror("Erro no Forge", f"Nao foi possivel instalar o Forge:\n{str(e)}"))
+                    self.root.after(0, self.reset_play_btn)
+                    return
+            
+            # === LÓGICA DE INSTALAÇÃO DO FABRIC ===
+            elif p["type"] == "Fabric":
+                print(f"[FABRIC-INSTALLER] Instalando Fabric para {vid}...")
+                set_status(f"Instalando Fabric {vid}...")
+                try:
+                    fabric_loader = minecraft_launcher_lib.mod_loader.get_mod_loader("fabric")
+                    fabric_loader.install(vid, self.mc_dir, callback=callback)
+                    final_vid = vid
+                except Exception as e:
+                    print(f"[FABRIC-INSTALLER] Erro: {e}")
+                    self.root.after(0, lambda: messagebox.showerror("Erro no Fabric", f"Nao foi possivel instalar o Fabric:\n{str(e)}"))
+                    self.root.after(0, self.reset_play_btn)
+                    return
+            
+            # === LÓGICA DE INSTALAÇÃO DO VANILLA ===
+            elif p["type"] == "Vanilla":
+                print(f"[VANILLA-INSTALLER] Instalando Minecraft {vid}...")
+                set_status(f"Baixando Minecraft {vid}...")
+                minecraft_launcher_lib.install.install_minecraft_version(vid, self.mc_dir, callback=callback)
+                final_vid = vid
+            
+            # Preparar opcoes
             options = {
                 "username": self.username,
                 "uuid": "",
